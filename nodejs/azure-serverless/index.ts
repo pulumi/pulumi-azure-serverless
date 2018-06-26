@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-export const v = 1;
+import * as functionApp from "./functionApp";
 
 // import * as apigateway from "./api";
 // import * as bucket from "./bucket";
