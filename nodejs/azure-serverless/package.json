@@ -1,0 +1,21 @@
+{
+    "name": "@pulumi/azure-serverless",
+    "version": "${VERSION}",
+    "description": "Pulumi Azure  Serverless Components.",
+    "keywords": [
+        "pulumi",
+        "azure",
+        "azure-serverless"
+    ],
+    "homepage": "https://pulumi.io/pulumi-azure-serverless",
+    "repository": "https://github.com/pulumi/pulumi-azure-serverless",
+    "dependencies": {
+        "@pulumi/azure": "^0.14.0-rc1",
+        "@pulumi/pulumi": "^0.14.0-rc1"
+    },
+    "devDependencies": {
+        "@types/node": "^8.0.26",
+        "tslint": "^5.7.0",
+        "typescript": "^2.6.2"
+    }
+}
