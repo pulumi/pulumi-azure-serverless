@@ -131,11 +131,10 @@ function signedBlobReadUrl(
  */
 export class EventSubscription<C extends Context, Data> extends pulumi.ComponentResource {
     readonly resourceGroup: azure.core.ResourceGroup;
-
     readonly storageAccount: azure.storage.Account;
     readonly storageContainer: azure.storage.Container;
-
     readonly appServicePlan: azure.appservice.Plan;
+
     readonly functionApp: azure.appservice.FunctionApp;
 
     constructor(type: string, name: string, callback: Callback<C, D>, bindings: pulumi.Output<Binding[]>,
