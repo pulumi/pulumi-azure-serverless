@@ -28,7 +28,7 @@ type Context = azurefunctions.Context;
  * return nothing, and should signal that it is done by calling `context.Done()`. Errors can be
  * signified by calling `context.Done(err)`
  */
-export type Callback<C extends Context, D> = (context: C, data: D) => void;
+export type Callback<C extends Context, Data> = (context: C, data: Data) => void;
 
 export interface EventSubscriptionArgs {
     /**
@@ -53,55 +53,45 @@ export interface EventSubscriptionArgs {
 
     /**
      * The consumption plan to put the FunctionApp in.  If not provided, a 'Dynamic', 'Y1' plan will
-     * be used.
+     * be used.  See https://social.msdn.microsoft.com/Forums/azure/en-US/665c365d-2b86-4a77-8cea-72ccffef216c for
+     * additional details.
      */
     appServicePlan?: azure.appservice.Plan;
 }
 
+/**
+ * Represents a Binding that will be emitted into the function.json config file for the FunctionApp.
+ * Individual services will have more specific information they will define in their own bindings.
+ */
 export interface Binding {
-
+    type: string;
+    direction: string;
+    name: string;
 }
 
-/*
-[
-            {
-                "authLevel": "anonymous",
-                "type": "httpTrigger",
-                "direction": "in",
-                "name": "req",
-            },
-            {
-                "type": "http",
-                "direction": "out",
-                "name": "$return",
-            },
-        ]
-
-*/
-
-function serializeCallbackAndCreateAssetMapOutput<C extends Context, D>(
-        name: string, handler: Callback<C, D>, bindingsOutput: pulumi.Output<Binding[]>): pulumi.Output<pulumi.asset.AssetMap> {
+/**
+ * Takes in a callback and a set of bindings, and produces the right AssetMap layout that Azure
+ * FunctionApps expect.
+ */
+function serializeCallbackAndCreateAssetMapOutput<C extends Context, Data>(
+        name: string, handler: Callback<C, Data>, bindingsOutput: pulumi.Output<Binding[]>): pulumi.Output<pulumi.asset.AssetMap> {
 
     const serializedHandlerOutput = pulumi.output(pulumi.runtime.serializeFunction(handler));
     return pulumi.all([bindingsOutput, serializedHandlerOutput]).apply(
-        ([bindings, serializedHandler]) => serializeCallbackAndCreateAssetMap(
-            name, bindings, serializedHandler));
-}
+        ([bindings, serializedHandler]) => {
 
-function serializeCallbackAndCreateAssetMap<C extends Context, D>(
-    name: string, bindings: Binding, serializedHandler: pulumi.runtime.SerializedFunction): pulumi.asset.AssetMap {
+            const map: pulumi.asset.AssetMap = {};
 
-    const map: pulumi.asset.AssetMap = {};
+            map["host.json"] = new pulumi.asset.StringAsset(JSON.stringify({}));
+            map[`${name}/function.json`] = new pulumi.asset.StringAsset(JSON.stringify({
+                "disabled": false,
+                "bindings": bindings,
+            }));
+            map[`${name}/index.js`] = new pulumi.asset.StringAsset(`module.exports = require("./handler").handler`),
+            map[`${name}/handler.js`] = new pulumi.asset.StringAsset(serializedHandler.text);
 
-    map["host.json"] = new pulumi.asset.StringAsset(JSON.stringify({}));
-    map[`${name}/function.json`] = new pulumi.asset.StringAsset(JSON.stringify({
-        "disabled": false,
-        "bindings": bindings,
-    }));
-    map[`${name}/index.js`] = new pulumi.asset.StringAsset(`module.exports = require("./handler").handler`),
-    map[`${name}/handler.js`] = new pulumi.asset.StringAsset(serializedHandler.text);
-
-    return map;
+            return map;
+        });
 }
 
 function signedBlobReadUrl(
@@ -139,19 +129,14 @@ function signedBlobReadUrl(
 /**
  * Base type for all subscription types.
  */
-export class EventSubscription<C extends Context, D> extends pulumi.ComponentResource {
+export class EventSubscription<C extends Context, Data> extends pulumi.ComponentResource {
     readonly resourceGroup: azure.core.ResourceGroup;
 
     readonly storageAccount: azure.storage.Account;
     readonly storageContainer: azure.storage.Container;
-    readonly blob: azure.storage.ZipBlob;
 
     readonly appServicePlan: azure.appservice.Plan;
     readonly functionApp: azure.appservice.FunctionApp;
-
-    readonly codeBlobUrl: pulumi.Output<string>;
-
-    // readonly endpoint: pulumi.Output<string>;
 
     constructor(type: string, name: string, callback: Callback<C, D>, bindings: pulumi.Output<Binding[]>,
                 args?: EventSubscriptionArgs, options?: pulumi.ResourceOptions) {
@@ -189,7 +174,6 @@ export class EventSubscription<C extends Context, D> extends pulumi.ComponentRes
 
             kind: "FunctionApp",
 
-            // https://social.msdn.microsoft.com/Forums/azure/en-US/665c365d-2b86-4a77-8cea-72ccffef216c
             sku: {
                 tier: "Dynamic",
                 size: "Y1",
@@ -198,7 +182,7 @@ export class EventSubscription<C extends Context, D> extends pulumi.ComponentRes
 
         const assetMap = serializeCallbackAndCreateAssetMapOutput(name, callback, bindings);
 
-        this.blob = new azure.storage.ZipBlob(`${name}`, {
+        const blob = new azure.storage.ZipBlob(`${name}`, {
             resourceGroupName: this.resourceGroup.name,
             storageAccountName: this.storageAccount.name,
             storageContainerName: this.storageContainer.name,
@@ -207,7 +191,7 @@ export class EventSubscription<C extends Context, D> extends pulumi.ComponentRes
             content: assetMap.apply(m => new pulumi.asset.AssetArchive(m)),
         }, parentArgs);
 
-        this.codeBlobUrl = signedBlobReadUrl(this.blob, this.storageAccount, this.storageContainer);
+        const codeBlobUrl = signedBlobReadUrl(blob, this.storageAccount, this.storageContainer);
 
         this.functionApp = new azure.appservice.FunctionApp(`${name}`, {
             ...resourceGroupArgs,
@@ -216,12 +200,8 @@ export class EventSubscription<C extends Context, D> extends pulumi.ComponentRes
             storageConnectionString: this.storageAccount.primaryConnectionString,
 
             appSettings: {
-                "WEBSITE_RUN_FROM_ZIP": this.codeBlobUrl,
+                "WEBSITE_RUN_FROM_ZIP": codeBlobUrl,
             },
         }, parentArgs);
-
-        // this.endpoint = this.functionApp.defaultHostname.apply(h => {
-        //     return `https://${h}/api/${name}`;
-        // });
     }
 }
