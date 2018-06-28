@@ -135,9 +135,14 @@ export class EventSubscription<C extends Context, Data> extends pulumi.Component
     readonly storageContainer: azure.storage.Container;
     readonly appServicePlan: azure.appservice.Plan;
 
+    /**
+     * The FunctionApp instance created to respond to the specific Binding triggers.  The
+     * code for it will be produced by serializing out the 'callback' parameter using pulumi
+     * serialization.
+     */
     readonly functionApp: azure.appservice.FunctionApp;
 
-    constructor(type: string, name: string, callback: Callback<C, D>, bindings: pulumi.Output<Binding[]>,
+    constructor(type: string, name: string, callback: Callback<C, Data>, bindings: pulumi.Output<Binding[]>,
                 args?: EventSubscriptionArgs, options?: pulumi.ResourceOptions) {
         super(type, name, {}, options);
 
