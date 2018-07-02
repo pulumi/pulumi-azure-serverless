@@ -18,9 +18,6 @@ import * as pulumi from "@pulumi/pulumi";
 import * as azurefunctions from "azure-functions-ts-essentials";
 import * as azurestorage from "azure-storage";
 
-const config = new pulumi.Config("azure");
-const region = config.require("region");
-
 type Context = azurefunctions.Context;
 
 /**
@@ -69,29 +66,47 @@ export interface Binding {
     name: string;
 }
 
+interface AssetsAndAppSettings {
+    assets: pulumi.asset.AssetMap;
+    appSettings: Record<string, string>;
+}
+
 /**
  * Takes in a callback and a set of bindings, and produces the right AssetMap layout that Azure
  * FunctionApps expect.
  */
 function serializeCallbackAndCreateAssetMapOutput<C extends Context, Data>(
-        name: string, handler: Callback<C, Data>, bindingsOutput: pulumi.Output<Binding[]>): pulumi.Output<pulumi.asset.AssetMap> {
+        name: string,
+        handler: Callback<C, Data>,
+        bindingsOutput: pulumi.Output<Binding[]>,
+    ): pulumi.Output<AssetsAndAppSettings> {
 
     const serializedHandlerOutput = pulumi.output(pulumi.runtime.serializeFunction(handler));
-    return pulumi.all([bindingsOutput, serializedHandlerOutput]).apply(
-        ([bindings, serializedHandler]) => {
+    return pulumi.all([bindingsOutput, serializedHandlerOutput]).apply(([bindings, serializedHandler]) => {
+        const map: pulumi.asset.AssetMap = {};
+        map["host.json"] = new pulumi.asset.StringAsset(JSON.stringify({
+            "tracing": {
+                "consoleLevel": "verbose",
+            },
+        }));
+        const connectionString = (bindings[0] as any).connection;
+        const appSettings: Record<string, string> = {};
+        if (connectionString) {
+            (bindings[0] as any).connection = "FOO";
+            appSettings["FOO"] = connectionString;
+        }
+        map[`${name}/function.json`] = new pulumi.asset.StringAsset(JSON.stringify({
+            "disabled": false,
+            "bindings": bindings,
+        }));
+        map[`${name}/index.js`] = new pulumi.asset.StringAsset(`module.exports = require("./handler").handler`),
+        map[`${name}/handler.js`] = new pulumi.asset.StringAsset(serializedHandler.text);
 
-            const map: pulumi.asset.AssetMap = {};
-
-            map["host.json"] = new pulumi.asset.StringAsset(JSON.stringify({}));
-            map[`${name}/function.json`] = new pulumi.asset.StringAsset(JSON.stringify({
-                "disabled": false,
-                "bindings": bindings,
-            }));
-            map[`${name}/index.js`] = new pulumi.asset.StringAsset(`module.exports = require("./handler").handler`),
-            map[`${name}/handler.js`] = new pulumi.asset.StringAsset(serializedHandler.text);
-
-            return map;
-        });
+        return {
+            assets: map,
+            appSettings: appSettings,
+        };
+    });
 }
 
 function signedBlobReadUrl(
@@ -151,7 +166,7 @@ export class EventSubscription<C extends Context, Data> extends pulumi.Component
         args = args || {};
 
         this.resourceGroup = args.resourceGroup || new azure.core.ResourceGroup(`${name}`, {
-            location: region,
+            location: "West US",
         }, parentArgs);
 
         const resourceGroupArgs = {
@@ -184,7 +199,9 @@ export class EventSubscription<C extends Context, Data> extends pulumi.Component
             },
         }, parentArgs);
 
-        const assetMap = serializeCallbackAndCreateAssetMapOutput(name, callback, bindings);
+        const assetAndAppSettings = serializeCallbackAndCreateAssetMapOutput(name, callback, bindings);
+        const assetMap = assetAndAppSettings.apply(a => a.assets);
+        const appSettings = assetAndAppSettings.apply(a => a.appSettings);
 
         const blob = new azure.storage.ZipBlob(`${name}`, {
             resourceGroupName: this.resourceGroup.name,
@@ -192,7 +209,8 @@ export class EventSubscription<C extends Context, Data> extends pulumi.Component
             storageContainerName: this.storageContainer.name,
             type: "block",
 
-            content: assetMap.apply(m => new pulumi.asset.AssetArchive(m)),
+            // TODO: https://github.com/pulumi/pulumi-terraform/issues/191
+            content: new pulumi.asset.AssetArchive((assetMap as any).promise()),
         }, parentArgs);
 
         const codeBlobUrl = signedBlobReadUrl(blob, this.storageAccount, this.storageContainer);
@@ -203,9 +221,10 @@ export class EventSubscription<C extends Context, Data> extends pulumi.Component
             appServicePlanId: this.appServicePlan.id,
             storageConnectionString: this.storageAccount.primaryConnectionString,
 
-            appSettings: {
+            appSettings: appSettings.apply(settings => ({
+                ...settings,
                 "WEBSITE_RUN_FROM_ZIP": codeBlobUrl,
-            },
+            })),
         }, parentArgs);
     }
 }

@@ -12,11 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import * as blob from "./blob";
 import * as functionApp from "./functionApp";
 
-// import * as apigateway from "./api";
-// import * as bucket from "./bucket";
-// import * as cloudwatch from "./cloudwatch";
-// import * as topic from "./topic";
-
-// export { apigateway, bucket, cloudwatch, topic };
+export { blob, functionApp };

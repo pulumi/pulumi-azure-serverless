@@ -107,50 +107,35 @@ export type BlobCallback = subscription.Callback<BlobContext, Buffer>;
  * options to control the behavior of the subscription.
  */
 export async function onEvent(
-    name: string, blob: azure.storage.Blob, callback: BlobCallback,
+    name: string, account: azure.storage.Account, path: string, callback: BlobCallback,
     args: subscription.EventSubscriptionArgs, opts?: pulumi.ResourceOptions): Promise<BlobEventSubscription> {
 
-    // First, get the storage connection string for the storage account this blob is associated
-    // with.
-    //
-    // TODO(cyrusn): This could be expensive (especially if many blobs are subscribed to).  Should
-    // we consider providing some mechanism for the caller to pass this in?
-    //
-    // Also, in general, Azure puts these connection strings into an AppSetting, and just looks
-    // things up that way.  We could consider doing the same.
-    const accountResult = await azure.storage.getAccount({
-        name: blob.storageAccountName,
-        resourceGroupName: blob.resourceGroupName,
+    const bindingOutput = account.primaryConnectionString.apply(connectionString => {
+        const binding: BlobBinding = {
+            name: "blob",
+            type: "blobTrigger",
+            direction: "in",
+            dataType: "binary",
+            path: path,
+            connection: connectionString,
+        };
+
+        return binding;
     });
 
-    const bindingOutput =
-        pulumi.all([blob.storageContainerName, blob.name, accountResult.primaryConnectionString])
-              .apply(([containerName, blobName, connectionString]) => {
-                    const binding: BlobBinding = {
-                        name: "blob",
-                        type: "blobTrigger",
-                        direction: "in",
-                        dataType: "binary",
-                        path: containerName + "/" + blobName,
-                        connection: connectionString,
-                    };
-
-                    return binding;
-              });
-
-    return new BlobEventSubscription(name, blob, callback, bindingOutput, args, opts);
+    return new BlobEventSubscription(name, account, callback, bindingOutput, args, opts);
 }
 
 export class BlobEventSubscription extends subscription.EventSubscription<BlobContext, Buffer> {
-    readonly blob: azure.storage.Blob;
+    readonly account: azure.storage.Account;
 
     constructor(
-        name: string, blob: azure.storage.Blob, callback: BlobCallback, binding: pulumi.Output<BlobBinding>,
+        name: string, account: azure.storage.Account, callback: BlobCallback, binding: pulumi.Output<BlobBinding>,
         args?: subscription.EventSubscriptionArgs, options?: pulumi.ResourceOptions) {
 
         super("azure-serverless:blob:BlobEventSubscription", name, callback,
               binding.apply(b => [b]), args, options);
 
-        this.blob = blob;
+        this.account = account;
     }
 }
