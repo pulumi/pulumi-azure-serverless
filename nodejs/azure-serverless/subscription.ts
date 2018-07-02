@@ -101,6 +101,8 @@ function serializeCallbackAndCreateAssetMapOutput<C extends Context, Data>(
         }));
         map[`${name}/index.js`] = new pulumi.asset.StringAsset(`module.exports = require("./handler").handler`),
         map[`${name}/handler.js`] = new pulumi.asset.StringAsset(serializedHandler.text);
+        // TODO: Include only the package depdencies that are referenced, similar to aws.serverless.Function
+        map[`${name}/node_modules`] = new pulumi.asset.FileArchive("./node_modules");
 
         return {
             assets: map,
