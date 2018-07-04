@@ -16,7 +16,6 @@ import * as azure from "@pulumi/azure";
 import * as pulumi from "@pulumi/pulumi";
 
 import * as azurefunctions from "azure-functions-ts-essentials";
-import * as azurestorage from "azure-storage";
 
 import * as subscription from "./subscription";
 
