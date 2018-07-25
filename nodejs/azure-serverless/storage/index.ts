@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import * as functionApp from "./functionApp";
-import * as storage from "./storage";
+import * as container from "./container";
 
-export { storage, functionApp };
+export { container };

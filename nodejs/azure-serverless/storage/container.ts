@@ -17,7 +17,7 @@ import * as pulumi from "@pulumi/pulumi";
 
 import * as azurefunctions from "azure-functions-ts-essentials";
 
-import * as subscription from "./subscription";
+import * as subscription from "../subscription";
 
 interface BlobBinding extends subscription.Binding {
     /**
