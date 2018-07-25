@@ -18,7 +18,16 @@ import * as pulumi from "@pulumi/pulumi";
 import * as azurefunctions from "azure-functions-ts-essentials";
 import { signedBlobReadUrl } from "./util";
 
-type Context = azurefunctions.Context;
+export interface Context extends azurefunctions.Context {
+    log: {
+        (...message: Array<any>): void;
+        error(...message: Array<any>): void;
+        warn(...message: Array<any>): void;
+        info(...message: Array<any>): void;
+        verbose(...message: Array<any>): void;
+        metric(...message: Array<any>): void;
+    };
+}
 
 /**
  * A synchronous function that can be converted into an Azure FunctionApp. This callback should

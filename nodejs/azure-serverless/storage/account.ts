@@ -14,7 +14,6 @@
 
 import * as azure from "@pulumi/azure";
 import * as pulumi from "@pulumi/pulumi";
-import * as azurefunctions from "azure-functions-ts-essentials";
 import * as subscription from "../subscription";
 
 interface BlobBinding extends subscription.Binding {
@@ -57,11 +56,11 @@ interface BlobBinding extends subscription.Binding {
 /**
  * Data that will be passed along in the context object to the BlobCallback.
  */
-export interface BlobContext extends azurefunctions.Context {
-    "executionContext": {
-        "invocationId": string;
-        "functionName": string;
-        "functionDirectory": string;
+export interface BlobContext extends subscription.Context {
+    executionContext: {
+        invocationId: string;
+        functionName: string;
+        functionDirectory: string;
     };
 
     "bindingData": {
@@ -166,6 +165,8 @@ export async function onBlobEvent(
         return [blobBinding];
     });
 
+    // Place the mapping from the well known key name to the storage account connection string in
+    // the 'app settings' object.
     const appSettingsOutput = args.appSettings || pulumi.output({});
 
     args.appSettings = pulumi.all([appSettingsOutput, account.primaryConnectionString]).apply(
