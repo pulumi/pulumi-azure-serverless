@@ -24,11 +24,11 @@ const storageContainer = new azure.storage.Container("images-container", {
 });
 
 // When a new PNG image is added, fire an event
-serverless.blob.onEvent("newImage", storageAccount, "images/{name}.png", (context, blob) => {
+serverless.blob.onBlobEvent("newImage", storageContainer, (context, blob) => {
     context.log!(context);
     context.log!(blob);
     context.done();
-}, {resourceGroup: resourceGroup});
+}, { filterSuffix: ".png", resourceGroup: resourceGroup});
 
 // The storage account where images should be uploaded
 export let storageAccountName = storageAccount.name;

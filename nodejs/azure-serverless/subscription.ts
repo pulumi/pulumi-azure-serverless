@@ -54,6 +54,11 @@ export interface EventSubscriptionArgs {
      * additional details.
      */
     appServicePlan?: azure.appservice.Plan;
+
+    /**
+     * A key-value map to use as the 'App Settings' for this function.
+     */
+    appSettings?: pulumi.Output<Record<string, string>>;
 }
 
 /**
@@ -66,20 +71,15 @@ export interface Binding {
     name: string;
 }
 
-interface AssetsAndAppSettings {
-    assets: pulumi.asset.AssetMap;
-    appSettings: Record<string, string>;
-}
-
 /**
  * Takes in a callback and a set of bindings, and produces the right AssetMap layout that Azure
  * FunctionApps expect.
  */
-function serializeCallbackAndCreateAssetMapOutput<C extends Context, Data>(
+function serializeCallback<C extends Context, Data>(
         name: string,
         handler: Callback<C, Data>,
         bindingsOutput: pulumi.Output<Binding[]>,
-    ): pulumi.Output<AssetsAndAppSettings> {
+    ): pulumi.Output<pulumi.asset.AssetMap> {
 
     const serializedHandlerOutput = pulumi.output(pulumi.runtime.serializeFunction(handler));
     return pulumi.all([bindingsOutput, serializedHandlerOutput]).apply(([bindings, serializedHandler]) => {
@@ -89,25 +89,18 @@ function serializeCallbackAndCreateAssetMapOutput<C extends Context, Data>(
                 "consoleLevel": "verbose",
             },
         }));
-        const connectionString = (bindings[0] as any).connection;
-        const appSettings: Record<string, string> = {};
-        if (connectionString) {
-            (bindings[0] as any).connection = "FOO";
-            appSettings["FOO"] = connectionString;
-        }
+
         map[`${name}/function.json`] = new pulumi.asset.StringAsset(JSON.stringify({
             "disabled": false,
             "bindings": bindings,
         }));
         map[`${name}/index.js`] = new pulumi.asset.StringAsset(`module.exports = require("./handler").handler`),
         map[`${name}/handler.js`] = new pulumi.asset.StringAsset(serializedHandler.text);
-        // TODO: Include only the package depdencies that are referenced, similar to aws.serverless.Function
+
+        // TODO: Include only the package dependencies that are referenced, similar to aws.serverless.Function
         map[`${name}/node_modules`] = new pulumi.asset.FileArchive("./node_modules");
 
-        return {
-            assets: map,
-            appSettings: appSettings,
-        };
+        return map;
     });
 }
 
@@ -134,6 +127,7 @@ export class EventSubscription<C extends Context, Data> extends pulumi.Component
         const parentArgs = { parent: this };
 
         args = args || {};
+        const appSettings = args.appSettings || pulumi.output({});
 
         this.resourceGroup = args.resourceGroup || new azure.core.ResourceGroup(`${name}`, {
             location: "West US",
@@ -169,18 +163,16 @@ export class EventSubscription<C extends Context, Data> extends pulumi.Component
             },
         }, parentArgs);
 
-        const assetAndAppSettings = serializeCallbackAndCreateAssetMapOutput(name, callback, bindings);
-        const assetMap = assetAndAppSettings.apply(a => a.assets);
-        const appSettings = assetAndAppSettings.apply(a => a.appSettings);
+        const assetMap = serializeCallback(name, callback, bindings);
+
+        // const appSettings = assetAndAppSettings.apply(a => a.appSettings);
 
         const blob = new azure.storage.ZipBlob(`${name}`, {
             resourceGroupName: this.resourceGroup.name,
             storageAccountName: this.storageAccount.name,
             storageContainerName: this.storageContainer.name,
             type: "block",
-
-            // TODO: https://github.com/pulumi/pulumi-terraform/issues/191
-            content: new pulumi.asset.AssetArchive((assetMap as any).promise()),
+            content: assetMap.apply(m => new pulumi.asset.AssetArchive(m)),
         }, parentArgs);
 
         const codeBlobUrl = signedBlobReadUrl(blob, this.storageAccount, this.storageContainer);
