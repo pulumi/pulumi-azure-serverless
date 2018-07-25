@@ -33,7 +33,7 @@ export interface EventSubscriptionArgs {
      * resource group will be created with the same name as the pulumi resource. It will be created
      * in the region specified by the config variable "azure:region"
      */
-    resourceGroup?: azure.core.ResourceGroup;
+    resourceGroup: azure.core.ResourceGroup;
 
     /**
      * The storage account to use where the zip-file blob for the FunctionApp will be located. If
@@ -78,7 +78,7 @@ export interface Binding {
 function serializeCallback<C extends Context, Data>(
         name: string,
         handler: Callback<C, Data>,
-        bindingsOutput: pulumi.Output<Binding[]>,
+        bindingsOutput: pulumi.Input<Binding[]>,
     ): pulumi.Output<pulumi.asset.AssetMap> {
 
     const serializedHandlerOutput = pulumi.output(pulumi.runtime.serializeFunction(handler));
@@ -120,18 +120,19 @@ export class EventSubscription<C extends Context, Data> extends pulumi.Component
      */
     readonly functionApp: azure.appservice.FunctionApp;
 
-    constructor(type: string, name: string, callback: Callback<C, Data>, bindings: pulumi.Output<Binding[]>,
-                args?: EventSubscriptionArgs, options?: pulumi.ResourceOptions) {
+    constructor(type: string, name: string, callback: Callback<C, Data>, bindings: pulumi.Input<Binding[]>,
+                args: EventSubscriptionArgs, options?: pulumi.ResourceOptions) {
         super(type, name, {}, options);
 
         const parentArgs = { parent: this };
 
-        args = args || {};
         const appSettings = args.appSettings || pulumi.output({});
 
-        this.resourceGroup = args.resourceGroup || new azure.core.ResourceGroup(`${name}`, {
-            location: "West US",
-        }, parentArgs);
+        if (!args.resourceGroup) {
+            throw new pulumi.RunError("[resourceGroup] must be provided in [args].");
+        }
+
+        this.resourceGroup = args.resourceGroup;
 
         const resourceGroupArgs = {
             resourceGroupName: this.resourceGroup.name,

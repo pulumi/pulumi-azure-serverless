@@ -14,9 +14,7 @@
 
 import * as azure from "@pulumi/azure";
 import * as pulumi from "@pulumi/pulumi";
-
 import * as azurefunctions from "azure-functions-ts-essentials";
-
 import * as subscription from "../subscription";
 
 interface BlobBinding extends subscription.Binding {
@@ -103,12 +101,28 @@ export type BlobCallback = subscription.Callback<BlobContext, Buffer>;
 
 export interface BlobEventSubscriptionArgs extends subscription.EventSubscriptionArgs {
     /**
+     * A full path specifying which blob to register events for.  For more information on this see:
+     * https://docs.microsoft.com/en-us/azure/azure-functions/functions-bindings-storage-blob
+     *
+     * If provided, [containerName], [filterPrefix] and [filterSuffix] should not be provided.
+     */
+    path?: pulumi.Input<string>;
+
+    /**
+     * The name of the container to listen to events for.  Must be provided if [path]
+     * is not provided.
+     */
+    containerName?: pulumi.Input<string>;
+
+    /**
      * An optional prefix or suffix to filter down notifications.  See
      * https://docs.microsoft.com/en-us/azure/azure-functions/functions-bindings-storage-blob#trigger---blob-name-patterns
      * for more details.
+     *
+     * Only valid with [containerName]
      */
-    filterPrefix?: string;
-    filterSuffix?: string;
+    filterPrefix?: pulumi.Input<string>;
+    filterSuffix?: pulumi.Input<string>;
 }
 
 /**
@@ -116,32 +130,40 @@ export interface BlobEventSubscriptionArgs extends subscription.EventSubscriptio
  * options to control the behavior of the subscription.
  */
 export async function onBlobEvent(
-    name: string, container: azure.storage.Container, callback: BlobCallback,
+    name: string, account: azure.storage.Account, callback: BlobCallback,
     args: BlobEventSubscriptionArgs, opts?: pulumi.ResourceOptions): Promise<BlobEventSubscription> {
 
-    const account = await azure.storage.getAccount({ name: container.storageAccountName, resourceGroupName: container.resourceGroupName });
-
     args = args || {};
-    const prefix = args.filterPrefix || "";
-    const suffix = args.filterSuffix || "";
-    const pathOutput = container.name.apply(n => n + `/${prefix}{blobName}${suffix}`);
+
+    let path: pulumi.Input<string>;
+    if (args.path) {
+        path = args.path;
+    } else if (args.containerName) {
+        const prefix = args.filterPrefix || "";
+        const suffix = args.filterSuffix || "";
+
+        path = pulumi.all([args.containerName, prefix, suffix]).apply(
+            ([cn, pr, su]) => cn + `/${pr}{blobName}${su}`);
+    } else {
+        throw new pulumi.RunError("Either [path] or [containerName] must be present in [args]");
+    }
 
     // The blob binding does not store the storage connection string directly.  Instead, the
     // connection string is put into the app settings (under whatever key we want). Then, the
     // .connection property of the binding contains the *name* of that app setting key.
     const bindingConnectionKey = "BindingConnectionAppSettingsKey";
 
-    const bindingOutput = pathOutput.apply(path => {
-        const binding: BlobBinding = {
+    const bindings = pulumi.output(path).apply(p => {
+        const blobBinding: BlobBinding = {
             name: "blob",
             type: "blobTrigger",
             direction: "in",
             dataType: "binary",
-            path: path,
+            path: p,
             connection: bindingConnectionKey,
         };
 
-        return binding;
+        return [blobBinding];
     });
 
     const appSettingsOutput = args.appSettings || pulumi.output({});
@@ -152,19 +174,20 @@ export async function onBlobEvent(
             return appSettings;
         });
 
-    return new BlobEventSubscription(name, container, callback, bindingOutput, args, opts);
+    return new BlobEventSubscription(name, account, callback, bindings, args, opts);
 }
 
 export class BlobEventSubscription extends subscription.EventSubscription<BlobContext, Buffer> {
-    readonly container: azure.storage.Container;
+    readonly account: azure.storage.Account;
 
     constructor(
-        name: string, container: azure.storage.Container, callback: BlobCallback, binding: pulumi.Output<BlobBinding>,
+        name: string, account: azure.storage.Account,
+        callback: BlobCallback, bindings: pulumi.Output<BlobBinding[]>,
         args: subscription.EventSubscriptionArgs, options?: pulumi.ResourceOptions) {
 
-        super("azure-serverless:blob:BlobEventSubscription", name, callback,
-              binding.apply(b => [b]), args, options);
+        super("azure-serverless:account:BlobEventSubscription", name, callback,
+              bindings, args, options);
 
-        this.container = container;
+        this.account = account;
     }
 }
