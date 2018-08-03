@@ -15,13 +15,9 @@
 package examples
 
 import (
-	"fmt"
-	"io/ioutil"
-	"net/http"
 	"os"
 	"path"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 
