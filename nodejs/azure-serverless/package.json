@@ -1,7 +1,7 @@
 {
     "name": "@pulumi/azure-serverless",
     "version": "${VERSION}",
-    "description": "Pulumi Azure  Serverless Components.",
+    "description": "Pulumi Azure Serverless Components.",
     "keywords": [
         "pulumi",
         "azure",
