@@ -2,7 +2,6 @@ PROJECT_NAME := Pulumi Azure Serverless Components
 SUB_PROJECTS := nodejs/azure-serverless
 include build/common.mk
 
-
 .PHONY: publish_tgz
 publish_tgz:
 	$(call STEP_MESSAGE)
