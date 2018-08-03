@@ -29,11 +29,28 @@ import (
 )
 
 func Test_Examples(t *testing.T) {
+	environ := os.Getenv("ARM_ENVIRONMENT")
+	if environ == "" {
+		t.Skipf("Skipping test due to missing ARM_ENVIRONMENT variable")
+	}
 	cwd, err := os.Getwd()
 	if !assert.NoError(t, err, "expected a valid working directory: %v", err) {
 		return
 	}
-	examples := []integration.ProgramTestOptions{}
+
+	// base options shared amongst all tests.
+	base := integration.ProgramTestOptions{
+		Config: map[string]string{
+			"azure:environment": environ,
+		},
+		Dependencies: []string{
+			"@pulumi/azure-serverless",
+		},
+	}
+
+	examples := []integration.ProgramTestOptions{
+		base.With(integration.ProgramTestOptions{Dir: path.Join(cwd, "blob")}),
+	}
 
 	for _, ex := range examples {
 		example := ex.With(integration.ProgramTestOptions{
