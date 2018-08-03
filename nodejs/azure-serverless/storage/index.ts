@@ -12,7 +12,4 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import * as functionApp from "./functionApp";
-import * as storage from "./storage";
-
-export { storage, functionApp };
+export { onBlobEvent } from "./account";

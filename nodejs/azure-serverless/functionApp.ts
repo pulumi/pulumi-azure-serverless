@@ -16,45 +16,13 @@ import * as azure from "@pulumi/azure";
 import * as pulumi from "@pulumi/pulumi";
 
 import * as azurefunctions from "azure-functions-ts-essentials";
-import * as azurestorage from "azure-storage";
+import { signedBlobReadUrl } from "./util";
 
 export type Context = azurefunctions.Context;
 export type HttpRequest = azurefunctions.HttpRequest;
 export * from "azure-functions-ts-essentials";
 
 export type AzureFunctionHandler = (context: Context, request: HttpRequest) => void;
-
-function signedBlobReadUrl(
-    blob: azure.storage.Blob | azure.storage.ZipBlob,
-    account: azure.storage.Account,
-    container: azure.storage.Container,
-): pulumi.Output<string> {
-    // Choose a fixed, far-future expiration date for signed blob URLs.
-    // The shared access signature (SAS) we generate for the Azure storage blob must remain valid for as long as the
-    // Function App is deployed, since new instances will download the code on startup. By using a fixed date, rather
-    // than (e.g.) "today plus ten years", the signing operation is idempotent.
-    const signatureExpiration = new Date(2100, 1);
-
-    return pulumi.all([
-        account.primaryConnectionString,
-        container.name,
-        blob.name,
-    ]).apply(([connectionString, containerName, blobName]) => {
-        const blobService = new azurestorage.BlobService(connectionString);
-        const signature = blobService.generateSharedAccessSignature(
-            containerName,
-            blobName,
-            {
-                AccessPolicy: {
-                    Expiry: signatureExpiration,
-                    Permissions: azurestorage.BlobUtilities.SharedAccessPermissions.READ,
-                },
-            },
-        );
-
-        return blobService.getUrl(containerName, blobName, signature);
-    });
-}
 
 async function blobContent(name: string, handler: AzureFunctionHandler): Promise<pulumi.asset.AssetMap> {
     const serializedHandler = await pulumi.runtime.serializeFunction(handler);

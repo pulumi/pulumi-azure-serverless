@@ -1,7 +1,7 @@
 {
     "name": "@pulumi/azure-serverless",
     "version": "${VERSION}",
-    "description": "Pulumi Azure  Serverless Components.",
+    "description": "Pulumi Azure Serverless Components.",
     "keywords": [
         "pulumi",
         "azure",
@@ -12,11 +12,11 @@
     "dependencies": {
         "@pulumi/azure": "^0.14.0-rc1",
         "@pulumi/pulumi": "^0.14.0-rc1",
-        "azure-storage": "^2.9.0-preview"
+        "read-package-tree": "^5.2.1",
+        "azure-functions-ts-essentials": "^1.3.2"
     },
     "devDependencies": {
         "@types/node": "^8.0.26",
-        "azure-functions-ts-essentials": "^1.3.2",
         "tslint": "^5.7.0",
         "typescript": "^2.6.2"
     }
