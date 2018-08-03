@@ -1,6 +1,5 @@
 {
     "name": "azure-blob",
-    "version": "0.1",
     "main": "bin/index.js",
     "typings": "bin/index.d.ts",
     "scripts": {
@@ -8,7 +7,8 @@
     },
     "dependencies": {
         "@pulumi/pulumi": "^0.14.0",
-        "@pulumi/azure": "^0.14.2"
+        "@pulumi/azure": "^0.14.2",
+        "mime-types": "^2.1.19"
     },
     "devDependencies": {
         "@types/node": "^8.0.26",

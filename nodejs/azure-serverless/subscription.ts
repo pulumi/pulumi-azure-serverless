@@ -14,6 +14,8 @@
 
 import * as azure from "@pulumi/azure";
 import * as pulumi from "@pulumi/pulumi";
+import * as fs from "fs";
+import * as filepath from "path";
 
 import * as azurefunctions from "azure-functions-ts-essentials";
 import { signedBlobReadUrl } from "./util";
@@ -90,8 +92,13 @@ function serializeCallback<C extends Context, Data>(
         bindingsOutput: pulumi.Input<Binding[]>,
     ): pulumi.Output<pulumi.asset.AssetMap> {
 
+    const includedPackages = new Set<string>();
+    const excludedPackages = new Set<string>();
+
+    const pathSetOutput = pulumi.output(allFoldersForPackages(includedPackages, excludedPackages));
+
     const serializedHandlerOutput = pulumi.output(pulumi.runtime.serializeFunction(handler));
-    return pulumi.all([bindingsOutput, serializedHandlerOutput]).apply(([bindings, serializedHandler]) => {
+    return pulumi.all([bindingsOutput, serializedHandlerOutput, pathSetOutput]).apply(([bindings, serializedHandler, pathSet]) => {
         const map: pulumi.asset.AssetMap = {};
         map["host.json"] = new pulumi.asset.StringAsset(JSON.stringify({
             "tracing": {
@@ -106,11 +113,143 @@ function serializeCallback<C extends Context, Data>(
         map[`${name}/index.js`] = new pulumi.asset.StringAsset(`module.exports = require("./handler").handler`),
         map[`${name}/handler.js`] = new pulumi.asset.StringAsset(serializedHandler.text);
 
-        // TODO: Include only the package dependencies that are referenced, similar to aws.serverless.Function
-        map[`${name}/node_modules`] = new pulumi.asset.FileArchive("./node_modules");
+        console.log("Paths: " + JSON.stringify([...pathSet]));
+
+        // // TODO: Include only the package dependencies that are referenced, similar to aws.serverless.Function
+        // map[`${name}/node_modules`] = new pulumi.asset.FileArchive("./node_modules");
+
+        // extraIncludePaths = extraIncludePaths || [];
+        // extraIncludePackages = extraIncludePackages || [];
+        // extraExcludePackages = extraExcludePackages || [];
+
+        // // AWS Lambda always provides `aws-sdk`, so skip this.  Do this before processing user-provided
+        // // extraIncludePackages so that users can force aws-sdk to be included (if they need a specific
+        // // version).
+        // excludedPackages.add("aws-sdk");
+        // for (const p of extraExcludePackages) {
+        //     excludedPackages.add(p);
+        // }
+
+        // for (const p of extraIncludePackages) {
+        //     includedPackages.add(p);
+        // }
+
+        // Add all paths explicitly requested by the user
+        // for (const path of extraIncludePaths) {
+        //     pathSet.add(path);
+        // }
+
+        // For each of the required paths, add the corresponding FileArchive or FileAsset to the AssetMap.
+        for (const path of pathSet.values()) {
+            // The Asset model does not support a consistent way to embed a file-or-directory into an `AssetArchive`, so
+            // we stat the path to figure out which it is and use the appropriate Asset constructor.
+            const stats = fs.lstatSync(path);
+            if (stats.isDirectory()) {
+                map[name + "/" + path] = new pulumi.asset.FileArchive(path);
+            } else {
+                map[name + "/" + path] = new pulumi.asset.FileAsset(path);
+            }
+        }
 
         return map;
     });
+}
+
+// Package is a node in the package tree returned by readPackageTree.
+interface Package {
+    name: string;
+    path: string;
+    package: {
+        dependencies?: { [key: string]: string; };
+    };
+    parent?: Package;
+    children: Package[];
+}
+
+const readPackageTree = require("read-package-tree");
+
+// allFolders computes the set of package folders that are transitively required by the root
+// 'dependencies' node in the client's project.json file.
+function allFoldersForPackages(includedPackages: Set<string>, excludedPackages: Set<string>): Promise<Set<string>> {
+    return new Promise((resolve, reject) => {
+        readPackageTree(".", undefined, (err: any, root: Package) => {
+            if (err) {
+                return reject(err);
+            }
+
+            // This is the core starting point of the algorithm.  We use readPackageTree to get the
+            // package.json information for this project, and then we start by walking the
+            // .dependencies node in that package.  Importantly, we do not look at things like
+            // .devDependencies or or .peerDependencies.  These are not what are considered part of
+            // the final runtime configuration of the app and should not be uploaded.
+            const referencedPackages = new Set<string>(includedPackages);
+            if (root.package && root.package.dependencies) {
+                for (const depName of Object.keys(root.package.dependencies)) {
+                    referencedPackages.add(depName);
+                }
+            }
+
+            const packagePaths = new Set<string>();
+            for (const pkg of referencedPackages) {
+                addPackageAndDependenciesToSet(root, pkg, packagePaths, excludedPackages);
+            }
+
+            resolve(packagePaths);
+        });
+    });
+}
+
+// addPackageAndDependenciesToSet adds all required dependencies for the requested pkg name from the given root package
+// into the set.  It will recurse into all dependencies of the package.
+function addPackageAndDependenciesToSet(
+    root: Package, pkg: string, packagePaths: Set<string>, excludedPackages: Set<string>) {
+    // Don't process this packages if it was in the set the user wants to exclude.
+
+    // Also, exclude it if it's an @pulumi package.  These packages are intended for deployment
+    // time only and will only bloat up the serialized lambda package.
+    if (excludedPackages.has(pkg) ||
+        pkg.startsWith("@pulumi")) {
+
+        return;
+    }
+
+    const child = findDependency(root, pkg);
+    if (!child) {
+        console.warn(`Could not include required dependency '${pkg}' in '${filepath.resolve(root.path)}'.`);
+        return;
+    }
+
+    packagePaths.add(child.path);
+    if (child.package.dependencies) {
+        for (const dep of Object.keys(child.package.dependencies) ) {
+            addPackageAndDependenciesToSet(child, dep, packagePaths, excludedPackages);
+        }
+    }
+}
+
+// findDependency searches the package tree starting at a root node (possibly a child) for a match for the given name.
+// It is assumed that the tree was correctly construted such that dependencies are resolved to compatible versions in
+// the closest available match starting at the provided root and walking up to the head of the tree.
+function findDependency(root: Package, name: string) {
+    for (; root; root = root.parent!) {
+        for (const child of root.children) {
+            let childName = child.name;
+            // Note: `read-package-tree` returns incorrect `.name` properties for packages in an orgnaization - like
+            // `@types/express` or `@protobufjs/path`.  Compute the correct name from the `path` property instead. Match
+            // any name that ends with something that looks like `@foo/bar`, such as `node_modules/@foo/bar` or
+            // `node_modules/baz/node_modules/@foo/bar.
+            const childFolderName = filepath.basename(child.path);
+            const parentFolderName = filepath.basename(filepath.dirname(child.path));
+            if (parentFolderName[0] === "@") {
+                childName = filepath.join(parentFolderName, childFolderName);
+            }
+            if (childName === name) {
+                return child;
+            }
+        }
+    }
+
+    return undefined;
 }
 
 /**
