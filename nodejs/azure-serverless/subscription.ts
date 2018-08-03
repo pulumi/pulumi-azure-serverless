@@ -113,32 +113,7 @@ function serializeCallback<C extends Context, Data>(
         map[`${name}/index.js`] = new pulumi.asset.StringAsset(`module.exports = require("./handler").handler`),
         map[`${name}/handler.js`] = new pulumi.asset.StringAsset(serializedHandler.text);
 
-        console.log("Paths: " + JSON.stringify([...pathSet]));
-
-        // // TODO: Include only the package dependencies that are referenced, similar to aws.serverless.Function
-        // map[`${name}/node_modules`] = new pulumi.asset.FileArchive("./node_modules");
-
-        // extraIncludePaths = extraIncludePaths || [];
-        // extraIncludePackages = extraIncludePackages || [];
-        // extraExcludePackages = extraExcludePackages || [];
-
-        // // AWS Lambda always provides `aws-sdk`, so skip this.  Do this before processing user-provided
-        // // extraIncludePackages so that users can force aws-sdk to be included (if they need a specific
-        // // version).
-        // excludedPackages.add("aws-sdk");
-        // for (const p of extraExcludePackages) {
-        //     excludedPackages.add(p);
-        // }
-
-        // for (const p of extraIncludePackages) {
-        //     includedPackages.add(p);
-        // }
-
-        // Add all paths explicitly requested by the user
-        // for (const path of extraIncludePaths) {
-        //     pathSet.add(path);
-        // }
-
+        // TODO: unify this code with aws-serverless instead of straight copying.
         // For each of the required paths, add the corresponding FileArchive or FileAsset to the AssetMap.
         for (const path of pathSet.values()) {
             // The Asset model does not support a consistent way to embed a file-or-directory into an `AssetArchive`, so
