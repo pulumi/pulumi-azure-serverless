@@ -44,7 +44,7 @@ export interface EventSubscriptionArgs {
      * resource group will be created with the same name as the pulumi resource. It will be created
      * in the region specified by the config variable "azure:region"
      */
-    resourceGroup: azure.core.ResourceGroup;
+    resourceGroup: pulumi.Input<azure.core.ResourceGroup>;
 
     /**
      * The storage account to use where the zip-file blob for the FunctionApp will be located. If
@@ -231,7 +231,7 @@ function findDependency(root: Package, name: string) {
  * Base type for all subscription types.
  */
 export class EventSubscription<C extends Context, Data> extends pulumi.ComponentResource {
-    readonly resourceGroup: azure.core.ResourceGroup;
+    readonly resourceGroup: pulumi.Output<azure.core.ResourceGroup>;
     readonly storageAccount: azure.storage.Account;
     readonly storageContainer: azure.storage.Container;
     readonly appServicePlan: azure.appservice.Plan;
@@ -255,11 +255,13 @@ export class EventSubscription<C extends Context, Data> extends pulumi.Component
             throw new pulumi.RunError("[resourceGroup] must be provided in [args].");
         }
 
-        this.resourceGroup = args.resourceGroup;
+        this.resourceGroup = pulumi.output(args.resourceGroup);
+        const resourceGroupName = this.resourceGroup.apply(g => g.name);
+        const location = this.resourceGroup.apply(g => g.location);
 
         const resourceGroupArgs = {
-            resourceGroupName: this.resourceGroup.name,
-            location: this.resourceGroup.location,
+            resourceGroupName,
+            location,
         };
 
         this.storageAccount = args.storageAccount || new azure.storage.Account(`${name}`, {
@@ -271,7 +273,7 @@ export class EventSubscription<C extends Context, Data> extends pulumi.Component
         }, parentArgs);
 
         this.storageContainer = args.storageContainer || new azure.storage.Container(`${name}`, {
-            resourceGroupName: this.resourceGroup.name,
+            resourceGroupName: resourceGroupName,
             storageAccountName: this.storageAccount.name,
             containerAccessType: "private",
         }, parentArgs);
@@ -291,8 +293,8 @@ export class EventSubscription<C extends Context, Data> extends pulumi.Component
 
         // const appSettings = assetAndAppSettings.apply(a => a.appSettings);
 
-        const blob = new azure.storage.ZipBlob(`${name}`, {
-            resourceGroupName: this.resourceGroup.name,
+        const blob = new azure.storage.ZipBlob(name, {
+            resourceGroupName: resourceGroupName,
             storageAccountName: this.storageAccount.name,
             storageContainerName: this.storageContainer.name,
             type: "block",
@@ -301,7 +303,7 @@ export class EventSubscription<C extends Context, Data> extends pulumi.Component
 
         const codeBlobUrl = signedBlobReadUrl(blob, this.storageAccount, this.storageContainer);
 
-        this.functionApp = new azure.appservice.FunctionApp(`${name}`, {
+        this.functionApp = new azure.appservice.FunctionApp(name, {
             ...resourceGroupArgs,
 
             appServicePlanId: this.appServicePlan.id,
