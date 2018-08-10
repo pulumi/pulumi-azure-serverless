@@ -1,6 +1,6 @@
 {
     "name": "azure-blob",
-    "version": "${VERSION}",
+    "version": "0.1.0",
     "main": "bin/index.js",
     "typings": "bin/index.d.ts",
     "scripts": {
