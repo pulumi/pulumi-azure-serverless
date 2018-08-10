@@ -27,9 +27,9 @@ export function signedBlobReadUrl(
     const signatureStart = new Date(0);
     const signatureExpiration = new Date(2100, 1);
 
-    return blob.url.apply(async (blobUrl) => {
+    return pulumi.all([blob.url, account.primaryConnectionString]).apply(async ([blobUrl, connectionString]) => {
         const accountSAS = await azure.storage.getAccountSAS({
-            connectionString: account.primaryConnectionString,
+            connectionString: connectionString,
             start: signatureStart.toISOString(),
             expiry: signatureExpiration.toISOString(),
             permissions: {
