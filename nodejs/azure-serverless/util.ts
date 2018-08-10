@@ -14,46 +14,33 @@
 
 import * as azure from "@pulumi/azure";
 import * as pulumi from "@pulumi/pulumi";
+import * as azurestorage from "azure-storage";
 
 export function signedBlobReadUrl(
     blob: azure.storage.Blob | azure.storage.ZipBlob,
     account: azure.storage.Account,
-    container: azure.storage.Container,
-): pulumi.Output<string> {
-    // Choose a fixed, far-past and far-future expiration date for signed blob URLs.
-    // The shared access signature (SAS) we generate for the Azure storage blob must remain valid for as long as the
-    // Function App is deployed, since new instances will download the code on startup. By using a fixed date, rather
-    // than (e.g.) "today plus ten years", the signing operation is idempotent.
-    const signatureStart = new Date(0);
+    container: azure.storage.Container): pulumi.Output<string> {
+
+    // Choose a fixed, far-future expiration date for signed blob URLs. The shared access signature
+    // (SAS) we generate for the Azure storage blob must remain valid for as long as the Function
+    // App is deployed, since new instances will download the code on startup. By using a fixed
+    // date, rather than (e.g.) "today plus ten years", the signing operation is idempotent.
     const signatureExpiration = new Date(2100, 1);
 
-    return blob.url.apply(async (blobUrl) => {
-        const accountSAS = await azure.storage.getAccountSAS({
-            connectionString: account.primaryConnectionString,
-            start: signatureStart.toISOString(),
-            expiry: signatureExpiration.toISOString(),
-            permissions: {
-                read: true,
-                write: false,
-                create: false,
-                add: false,
-                list: false,
-                delete: false,
-                update: false,
-                process: false,
-            },
-            services: {
-                blob: true,
-                file: false,
-                queue: false,
-                table: false,
-            },
-            resourceTypes: {
-                object: true,
-                container: false,
-                service: false,
-            },
+    return pulumi.all([account.primaryConnectionString, container.name, blob.name]).apply(
+        ([connectionString, containerName, blobName]) => {
+            const blobService = new azurestorage.BlobService(connectionString);
+            const signature = blobService.generateSharedAccessSignature(
+                containerName,
+                blobName,
+                {
+                    AccessPolicy: {
+                        Expiry: signatureExpiration,
+                        Permissions: azurestorage.BlobUtilities.SharedAccessPermissions.READ,
+                    },
+                },
+            );
+
+            return blobService.getUrl(containerName, blobName, signature);
         });
-        return blobUrl + accountSAS.sas;
-    });
 }

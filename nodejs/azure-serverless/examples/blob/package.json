@@ -1,12 +1,13 @@
 {
     "name": "azure-blob",
+    "version": "${VERSION}",
     "main": "bin/index.js",
     "typings": "bin/index.d.ts",
     "scripts": {
         "build": "tsc"
     },
     "dependencies": {
-        "@pulumi/pulumi": "^0.14.0",
+        "@pulumi/pulumi": "^0.14.3",
         "@pulumi/azure": "^0.14.2",
         "mime-types": "^2.1.19"
     },

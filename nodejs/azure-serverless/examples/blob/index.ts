@@ -1,13 +1,12 @@
 // Copyright 2016-2017, Pulumi Corporation.  All rights reserved.
 
-import * as pulumi from "@pulumi/pulumi";
 import * as azure from "@pulumi/azure";
 import * as serverless from "@pulumi/azure-serverless";
-
 
 const resourceGroup = new azure.core.ResourceGroup("resourcegroup", {
     location: "West US 2",
 });
+
 // Create a storage account for our images
 const storageAccount = new azure.storage.Account("storage", {
     resourceGroupName: resourceGroup.name,
