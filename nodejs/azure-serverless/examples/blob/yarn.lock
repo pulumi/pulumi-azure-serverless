@@ -45,7 +45,7 @@
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/@protobufjs/utf8/-/utf8-1.1.0.tgz#a777360b5b39a1a2e5106f8e858f2fd2d060c570"
 
-"@pulumi/azure@^0.15.1-dev-1534293441-g18c5bf9":
+"@pulumi/azure@^0.15.0":
   version "0.15.1"
   resolved "https://registry.yarnpkg.com/@pulumi/azure/-/azure-0.15.1.tgz#a062564e17c9ded236088ca078774cefa7beefe2"
   dependencies:
@@ -54,20 +54,6 @@
 "@pulumi/pulumi@^0.15.0":
   version "0.15.0"
   resolved "https://registry.yarnpkg.com/@pulumi/pulumi/-/pulumi-0.15.0.tgz#63f7e6ab76c35459eae4725112ff507f08d071c2"
-  dependencies:
-    google-protobuf "^3.5.0"
-    grpc "^1.12.2"
-    minimist "^1.2.0"
-    protobufjs "^6.8.6"
-    read-package-tree "^5.2.1"
-    require-from-string "^2.0.1"
-    source-map-support "^0.4.16"
-    ts-node "^7.0.0"
-    typescript "^3.0.0"
-
-"@pulumi/pulumi@^0.15.1-dev-1534398295-g89d5dd00":
-  version "0.15.1-dev-1534398295-g89d5dd00"
-  resolved "https://registry.yarnpkg.com/@pulumi/pulumi/-/pulumi-0.15.1-dev-1534398295-g89d5dd00.tgz#e17819c10b514900478efd140b5f8b7e591b517c"
   dependencies:
     google-protobuf "^3.5.0"
     grpc "^1.12.2"
