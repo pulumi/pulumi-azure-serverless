@@ -98,7 +98,7 @@ export interface BlobContext extends subscription.Context {
  */
 export type BlobCallback = subscription.Callback<BlobContext, Buffer>;
 
-export interface BlobEventSubscriptionArgs extends subscription.EventSubscriptionArgs {
+export interface BlobEventSubscriptionArgs extends subscription.EventSubscriptionArgs<BlobContext, Buffer> {
     /**
      * A full path specifying which blob to register events for.  For more information on this see:
      * https://docs.microsoft.com/en-us/azure/azure-functions/functions-bindings-storage-blob
@@ -129,7 +129,7 @@ export interface BlobEventSubscriptionArgs extends subscription.EventSubscriptio
  * options to control the behavior of the subscription.
  */
 export async function onBlobEvent(
-    name: string, account: azure.storage.Account, callback: BlobCallback,
+    name: string, account: azure.storage.Account,
     args: BlobEventSubscriptionArgs, opts?: pulumi.ResourceOptions): Promise<BlobEventSubscription> {
 
     args = args || {};
@@ -175,19 +175,17 @@ export async function onBlobEvent(
             return appSettings;
         });
 
-    return new BlobEventSubscription(name, account, callback, bindings, args, opts);
+    return new BlobEventSubscription(name, account, bindings, args, opts);
 }
 
 export class BlobEventSubscription extends subscription.EventSubscription<BlobContext, Buffer> {
     readonly account: azure.storage.Account;
 
     constructor(
-        name: string, account: azure.storage.Account,
-        callback: BlobCallback, bindings: pulumi.Output<BlobBinding[]>,
-        args: subscription.EventSubscriptionArgs, options?: pulumi.ResourceOptions) {
+        name: string, account: azure.storage.Account, bindings: pulumi.Output<BlobBinding[]>,
+        args: subscription.EventSubscriptionArgs<BlobContext, Buffer>, options?: pulumi.ResourceOptions) {
 
-        super("azure-serverless:account:BlobEventSubscription", name, callback,
-              bindings, args, options);
+        super("azure-serverless:account:BlobEventSubscription", name, bindings, args, options);
 
         this.account = account;
     }
