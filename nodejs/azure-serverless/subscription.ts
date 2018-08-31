@@ -36,19 +36,31 @@ export interface Context extends azurefunctions.Context {
  */
 export type Callback<C extends Context, Data> = (context: C, data: Data) => void;
 
-export interface EventSubscriptionArgs {
+/**
+ * CallbackFactory is the signature for a function that will be called once to produce the function
+ * that Azure FunctionApps will call into.  It can be used to initialize expensive state once that
+ * can then be used across all invocations of the FunctionApp (as long as the FunctionApp is using
+ * the same warm node instance).
+ */
+export type CallbackFactory<C extends Context, Data> = () => Callback<C, Data>;
+
+export interface EventSubscriptionArgs<C extends Context, Data> {
     /**
-     * If teh callback passed to the subscription is a function which, when invoked, will produce
-     * the actual entrypoint function. Useful for when serializing a function that has high startup
-     * cost that only wants to be run once. The signature of this function should be:  () =>
-     * (provider_handler_args...) => provider_result
-     *
-     * This will then be emitted as: `exports.[exportName] = serialized_func_name();`
-     *
-     * In other words, the subscription function will be invoked (once) and the resulting inner
-     * function will be what is exported.
+     * The Javascript function instance to use as the entrypoint for the Azure FunctionApp.  Either
+     * [func] or [factoryFunc] must be provided.
      */
-    isFactoryFunction?: boolean;
+    func?: Callback<C, Data>;
+
+    /**
+     * The Javascript function instance that will be called to produce the function that is the
+     * entrypoint for the Azure FunctionApp. Either [func] or [factoryFunc] must be provided.
+     *
+     * This form is useful when there is expensive initialization work that should only be executed
+     * once.  The factory-function will be invoked once when the final Azure FunctionApp module is
+     * loaded. It can run whatever code it needs, and will end by returning the actual function that
+     * the Azure will call into each time the FunctionApp it is is invoked.
+     */
+    factoryFunc?: CallbackFactory<C, Data>;
 
     /**
      * The resource group to create the serverless FunctionApp within.  If not provided, a new
@@ -99,15 +111,23 @@ export interface Binding {
  */
 function serializeCallback<C extends Context, Data>(
         name: string,
-        handler: Callback<C, Data>,
-        eventSubscriptionArgs: EventSubscriptionArgs,
+        eventSubscriptionArgs: EventSubscriptionArgs<C, Data>,
         bindingsOutput: pulumi.Input<Binding[]>,
     ): pulumi.Output<pulumi.asset.AssetMap> {
 
     const pathSetOutput = pulumi.output(pulumi.runtime.computeCodePaths());
 
+    if (eventSubscriptionArgs.func && eventSubscriptionArgs.factoryFunc) {
+        throw new pulumi.RunError("Cannot provide both [func] and [factoryFunc]");
+    }
+
+    const func = eventSubscriptionArgs.func || eventSubscriptionArgs.factoryFunc;
+    if (!func) {
+        throw new Error("Missing required function callback");
+    }
+
     const serializedHandlerOutput = pulumi.output(pulumi.runtime.serializeFunction(
-        handler, { isFactoryFunction: eventSubscriptionArgs.isFactoryFunction }));
+        func, { isFactoryFunction: !!eventSubscriptionArgs.factoryFunc }));
 
     return pulumi.all([bindingsOutput, serializedHandlerOutput, pathSetOutput]).apply(([bindings, serializedHandler, pathSet]) => {
         const map: pulumi.asset.AssetMap = {};
@@ -150,8 +170,8 @@ export class EventSubscription<C extends Context, Data> extends pulumi.Component
      */
     readonly functionApp: azure.appservice.FunctionApp;
 
-    constructor(type: string, name: string, callback: Callback<C, Data>,
-                bindings: pulumi.Input<Binding[]>, args: EventSubscriptionArgs, options?: pulumi.ResourceOptions) {
+    constructor(type: string, name: string, bindings: pulumi.Input<Binding[]>,
+                args: EventSubscriptionArgs<C, Data>, options?: pulumi.ResourceOptions) {
         super(type, name, {}, options);
 
         const parentArgs = { parent: this };
@@ -196,7 +216,7 @@ export class EventSubscription<C extends Context, Data> extends pulumi.Component
             },
         }, parentArgs);
 
-        const assetMap = serializeCallback(name, callback, args, bindings);
+        const assetMap = serializeCallback(name, args, bindings);
 
         // const appSettings = assetAndAppSettings.apply(a => a.appSettings);
 
