@@ -38,6 +38,19 @@ export type Callback<C extends Context, Data> = (context: C, data: Data) => void
 
 export interface EventSubscriptionArgs {
     /**
+     * If teh callback passed to the subscription is a function which, when invoked, will produce
+     * the actual entrypoint function. Useful for when serializing a function that has high startup
+     * cost that only wants to be run once. The signature of this function should be:  () =>
+     * (provider_handler_args...) => provider_result
+     *
+     * This will then be emitted as: `exports.[exportName] = serialized_func_name();`
+     *
+     * In other words, the subscription function will be invoked (once) and the resulting inner
+     * function will be what is exported.
+     */
+    isFactoryFunction?: boolean;
+
+    /**
      * The resource group to create the serverless FunctionApp within.  If not provided, a new
      * resource group will be created with the same name as the pulumi resource. It will be created
      * in the region specified by the config variable "azure:region"
@@ -87,12 +100,15 @@ export interface Binding {
 function serializeCallback<C extends Context, Data>(
         name: string,
         handler: Callback<C, Data>,
+        eventSubscriptionArgs: EventSubscriptionArgs,
         bindingsOutput: pulumi.Input<Binding[]>,
     ): pulumi.Output<pulumi.asset.AssetMap> {
 
     const pathSetOutput = pulumi.output(pulumi.runtime.computeCodePaths());
 
-    const serializedHandlerOutput = pulumi.output(pulumi.runtime.serializeFunction(handler));
+    const serializedHandlerOutput = pulumi.output(pulumi.runtime.serializeFunction(
+        handler, { isFactoryFunction: eventSubscriptionArgs.isFactoryFunction }));
+
     return pulumi.all([bindingsOutput, serializedHandlerOutput, pathSetOutput]).apply(([bindings, serializedHandler, pathSet]) => {
         const map: pulumi.asset.AssetMap = {};
         map["host.json"] = new pulumi.asset.StringAsset(JSON.stringify({
@@ -134,8 +150,8 @@ export class EventSubscription<C extends Context, Data> extends pulumi.Component
      */
     readonly functionApp: azure.appservice.FunctionApp;
 
-    constructor(type: string, name: string, callback: Callback<C, Data>, bindings: pulumi.Input<Binding[]>,
-                args: EventSubscriptionArgs, options?: pulumi.ResourceOptions) {
+    constructor(type: string, name: string, callback: Callback<C, Data>,
+                bindings: pulumi.Input<Binding[]>, args: EventSubscriptionArgs, options?: pulumi.ResourceOptions) {
         super(type, name, {}, options);
 
         const parentArgs = { parent: this };
@@ -180,7 +196,7 @@ export class EventSubscription<C extends Context, Data> extends pulumi.Component
             },
         }, parentArgs);
 
-        const assetMap = serializeCallback(name, callback, bindings);
+        const assetMap = serializeCallback(name, callback, args, bindings);
 
         // const appSettings = assetAndAppSettings.apply(a => a.appSettings);
 

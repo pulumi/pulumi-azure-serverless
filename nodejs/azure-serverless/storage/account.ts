@@ -186,8 +186,8 @@ export class BlobEventSubscription extends subscription.EventSubscription<BlobCo
         callback: BlobCallback, bindings: pulumi.Output<BlobBinding[]>,
         args: subscription.EventSubscriptionArgs, options?: pulumi.ResourceOptions) {
 
-        super("azure-serverless:account:BlobEventSubscription", name, callback,
-              bindings, args, options);
+        super("azure-serverless:account:BlobEventSubscription",
+            name, callback, bindings, args, options);
 
         this.account = account;
     }
