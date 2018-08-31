@@ -14,5 +14,6 @@
 
 import * as functionApp from "./functionApp";
 import * as storage from "./storage";
+import * as subscription from "./subscription";
 
-export { storage, functionApp };
+export { functionApp, storage, subscription };
