@@ -108,7 +108,6 @@ export async function onTopicEvent(
     let subscription = args.subscription;
     if (!subscription) {
         subscription = new eventhub.Subscription(name, {
-            // location: undefined, // pulumi.output(args.resourceGroup).apply(g => g.location),
             resourceGroupName: pulumi.output(args.resourceGroup).apply(g => g.name),
             namespaceName: topic.namespaceName,
             topicName: topic.name,
@@ -116,7 +115,7 @@ export async function onTopicEvent(
         }, { parent: topic });
     }
 
-    // The blob binding does not store the storage connection string directly.  Instead, the
+    // The topic binding does not store the storage connection string directly.  Instead, the
     // connection string is put into the app settings (under whatever key we want). Then, the
     // .connection property of the binding contains the *name* of that app setting key.
     const bindingConnectionKey = "BindingConnectionAppSettingsKey";
