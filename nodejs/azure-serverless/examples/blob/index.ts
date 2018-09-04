@@ -25,8 +25,8 @@ const storageContainer = new azure.storage.Container("images-container", {
 // When a new PNG image is added, fire an event
 serverless.storage.onBlobEvent("newImage", storageAccount, {
     func: (context, blob) => {
-        context.log(context);
-        context.log(blob);
+        console.log(context);
+        console.log(blob);
         context.done();
     },
     containerName: storageContainer.name,
