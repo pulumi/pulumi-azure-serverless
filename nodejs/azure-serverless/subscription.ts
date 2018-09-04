@@ -121,9 +121,19 @@ function serializeCallback<C extends Context, Data>(
         throw new pulumi.RunError("Cannot provide both [func] and [factoryFunc]");
     }
 
-    const func = eventSubscriptionArgs.func || eventSubscriptionArgs.factoryFunc;
-    if (!func) {
+    if (!eventSubscriptionArgs.func && !eventSubscriptionArgs.factoryFunc) {
         throw new Error("Missing required function callback");
+    }
+
+    let func: Function;
+    if (eventSubscriptionArgs.func) {
+        func = redirectConsoleOutput(eventSubscriptionArgs.func);
+    }
+    else {
+        func = () => {
+            const innerFunc = eventSubscriptionArgs.factoryFunc!();
+            return redirectConsoleOutput(innerFunc);
+        };
     }
 
     const serializedHandlerOutput = pulumi.output(pulumi.runtime.serializeFunction(
@@ -153,6 +163,20 @@ function serializeCallback<C extends Context, Data>(
         return map;
     });
 }
+
+function redirectConsoleOutput<C extends Context, Data>(callback: Callback<C, Data>) {
+    return (context: C, data: Data) => {
+        // Redirect console logging to context logging.
+        console.log = context.log;
+        console.error = context.log.error;
+        console.warn = context.log.warn;
+        // tslint:disable-next-line:no-console
+        console.info = context.log.info;
+
+        return callback(context, data);
+    };
+}
+
 
 /**
  * Base type for all subscription types.
