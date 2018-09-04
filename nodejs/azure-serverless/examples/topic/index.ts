@@ -23,7 +23,7 @@ const topic = new eventhub.Topic("test", {
 
 serverless.eventhub.onTopicEvent("test", namespace, topic, {
     resourceGroup: resourceGroup,
-    func: (context, arg) => {
+    func: async (context, arg) => {
         context.log("context: " + JSON.stringify(context, null, 2));
         context.log("arg: " + JSON.stringify(arg, null, 2));
     },
