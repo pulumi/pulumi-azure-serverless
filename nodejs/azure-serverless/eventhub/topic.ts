@@ -99,9 +99,9 @@ export interface TopicEventSubscriptionArgs extends subscriptionMod.EventSubscri
  * Creates a new subscription to the given blob using the callback provided, along with optional
  * options to control the behavior of the subscription.
  */
-export async function onTopicEvent(
+export function onTopicEvent(
     name: string, namespace: eventhub.Namespace, topic: eventhub.Topic,
-    args: TopicEventSubscriptionArgs, opts?: pulumi.ResourceOptions): Promise<TopicEventSubscription> {
+    args: TopicEventSubscriptionArgs, opts?: pulumi.ResourceOptions): TopicEventSubscription {
 
     args = args || {};
 

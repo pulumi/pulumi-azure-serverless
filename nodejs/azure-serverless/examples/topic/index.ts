@@ -21,13 +21,10 @@ const topic = new eventhub.Topic("test", {
     namespaceName: namespace.name,
 });
 
-serverless.eventhub.onTopicEvent("test", namespace, topic, {
+export const subscription = serverless.eventhub.onTopicEvent("test", namespace, topic, {
     resourceGroup: resourceGroup,
     func: async (context, arg) => {
         context.log("context: " + JSON.stringify(context, null, 2));
         context.log("arg: " + JSON.stringify(arg, null, 2));
     },
 });
-
-// The storage account where images should be uploaded
-export let topicName = topic.name;
