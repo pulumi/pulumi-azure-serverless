@@ -12,9 +12,4 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import * as eventhub from "./eventhub";
-import * as functionApp from "./functionApp";
-import * as storage from "./storage";
-import * as subscription from "./subscription";
-
-export { eventhub, functionApp, storage, subscription };
+export { onTopicEvent } from "./topic";
