@@ -20,5 +20,11 @@
         "@types/node": "^8.0.26",
         "tslint": "^5.7.0",
         "typescript": "^2.6.2"
+    },
+    "pulumi": {
+        "runtimeDependencies": {
+            "azure-functions-ts-essentials": "^1.3.2",
+            "azure-storage": "^2.10.1"
+        }
     }
 }
