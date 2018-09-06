@@ -115,8 +115,6 @@ function serializeCallback<C extends Context, Data>(
         bindingsOutput: pulumi.Input<Binding[]>,
     ): pulumi.Output<pulumi.asset.AssetMap> {
 
-    const pathSetOutput = pulumi.output(pulumi.runtime.computeCodePaths());
-
     if (eventSubscriptionArgs.func && eventSubscriptionArgs.factoryFunc) {
         throw new pulumi.RunError("Cannot provide both [func] and [factoryFunc]");
     }
@@ -136,10 +134,11 @@ function serializeCallback<C extends Context, Data>(
         };
     }
 
-    const serializedHandlerOutput = pulumi.output(pulumi.runtime.serializeFunction(
-        func, { isFactoryFunction: !!eventSubscriptionArgs.factoryFunc }));
+    const serializedHandlerPromise = pulumi.runtime.serializeFunction(
+        func, { isFactoryFunction: !!eventSubscriptionArgs.factoryFunc });
+    const pathSetPromise = pulumi.runtime.computeCodePaths();
 
-    return pulumi.all([bindingsOutput, serializedHandlerOutput, pathSetOutput]).apply(([bindings, serializedHandler, pathSet]) => {
+    return pulumi.all([bindingsOutput, serializedHandlerPromise, pathSetPromise]).apply(([bindings, serializedHandler, pathSet]) => {
         const map: pulumi.asset.AssetMap = {};
         map["host.json"] = new pulumi.asset.StringAsset(JSON.stringify({
             "tracing": {
