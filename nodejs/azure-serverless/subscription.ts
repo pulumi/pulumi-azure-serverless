@@ -93,6 +93,26 @@ export interface EventSubscriptionArgs<C extends Context, Data> {
      * A key-value map to use as the 'App Settings' for this function.
      */
     appSettings?: pulumi.Output<Record<string, string>>;
+
+    /**
+     * The paths relative to the program folder to include in the FunctionApp upload.  Default is
+     * `[]`.
+     */
+    includePaths?: string[];
+
+    /**
+     * The packages relative to the program folder to include in the FunctionApp upload.  The
+     * version of the package installed in the program folder and it's dependencies will all be
+     * included. Default is `[]`.
+     */
+    includePackages?: string[];
+
+    /**
+     * The packages relative to the program folder to not include the FunctionApp upload. This can
+     * be used to override the default serialization logic that includes all packages referenced by
+     * project.json (except @pulumi packages).  Default is `[]`.
+     */
+    excludePackages?: string[];
 }
 
 /**
@@ -136,7 +156,10 @@ function serializeCallback<C extends Context, Data>(
 
     const serializedHandlerPromise = pulumi.runtime.serializeFunction(
         func, { isFactoryFunction: !!eventSubscriptionArgs.factoryFunc });
-    const pathSetPromise = pulumi.runtime.computeCodePaths();
+    const pathSetPromise = pulumi.runtime.computeCodePaths(
+        eventSubscriptionArgs.includePaths || [],
+        eventSubscriptionArgs.includePackages || [],
+        eventSubscriptionArgs.excludePackages || []);
 
     return pulumi.all([bindingsOutput, serializedHandlerPromise, pathSetPromise]).apply(([bindings, serializedHandler, pathSet]) => {
         const map: pulumi.asset.AssetMap = {};
