@@ -190,3 +190,134 @@ export class BlobEventSubscription extends subscription.EventSubscription<BlobCo
         this.account = account;
     }
 }
+
+
+
+interface QueueBinding extends subscription.Binding {
+    /**
+     * The name of the property in the context object to bind the actual queue message to. Not really
+     * important in our implementation as the queue message will be passed as the second argument to
+     * the callback function.
+     */
+    name: string;
+
+    /**
+     * The type of a queue binding.  Must be 'queueTrigger'.
+     */
+    type: "queueTrigger";
+
+    /**
+     * The direction of the binding.  We only 'support' messages being inputs to functions.
+     */
+    direction: "in";
+
+    /**
+     * How we want the message represented when passed into the callback.  We specify 'binary'
+     * so that all data is passed in as a buffer.  Otherwise, Azure will attempt to sniff
+     * the content and convert it accordingly. This gives us a consistent way to know what
+     * data will be passed into the function.
+     */
+    dataType: "binary";
+
+    /**
+     * The name of the storage queue to listen to.
+     */
+    queueName: string;
+
+    /**
+     * The storage connection string for the storage account containing the queue.
+     */
+    connection: string;
+}
+
+/**
+ * Data that will be passed along in the context object to the QueueContext.
+ */
+export interface QueueContext extends subscription.Context {
+    executionContext: {
+        invocationId: string;
+        functionName: string;
+        functionDirectory: string;
+    };
+
+    "bindingData": { 
+        "queueTrigger": string,
+        "dequeueCount": number,
+        "expirationTime": string,
+        "id": string,
+        "insertionTime": string,
+        "nextVisibleTime": string,
+        "popReceipt": string,
+        "sys": { 
+            "methodName": string,
+            "utcNow": string 
+        },
+        "invocationId": string 
+    };
+}
+
+/**
+ * Signature of the callback that can receive queue notifications.
+ */
+export type QueueCallback = subscription.Callback<QueueContext, Buffer>;
+
+export interface QueueEventSubscriptionArgs extends subscription.EventSubscriptionArgs<QueueContext, Buffer> {
+    /**
+     * The name of the storage queue to listen to.
+     */
+    queueName: pulumi.Input<string>;
+}
+
+/**
+ * Creates a new subscription to the given queue using the callback provided, along with optional
+ * options to control the behavior of the subscription.
+ */
+export async function onQueueMessage(
+    name: string, account: azure.storage.Account,
+    args: QueueEventSubscriptionArgs, opts?: pulumi.ResourceOptions): Promise<QueueEventSubscription> {
+
+    args = args || {};
+
+    // The queue binding does not store the storage connection string directly.  Instead, the
+    // connection string is put into the app settings (under whatever key we want). Then, the
+    // .connection property of the binding contains the *name* of that app setting key.
+    const bindingConnectionKey = "BindingConnectionAppSettingsKey";
+
+    const bindings = pulumi.output(args.queueName).apply(q => {
+        const queueBinding: QueueBinding = {
+            name: "queue",
+            type: "queueTrigger",
+            direction: "in",
+            dataType: "binary",
+            queueName: q,
+            connection: bindingConnectionKey,
+        };
+
+        return [queueBinding];
+    });
+
+    // Place the mapping from the well known key name to the storage account connection string in
+    // the 'app settings' object.
+    const appSettingsOutput = args.appSettings || pulumi.output({});
+
+    args.appSettings = pulumi.all([appSettingsOutput, account.primaryConnectionString]).apply(
+        ([appSettings, connectionString]) => {
+            appSettings[bindingConnectionKey] = connectionString;
+            return appSettings;
+        });
+
+    return new QueueEventSubscription(name, account, bindings, args, opts);
+}
+
+export class QueueEventSubscription extends subscription.EventSubscription<QueueContext, Buffer> {
+    readonly account: azure.storage.Account;
+
+    constructor(
+        name: string, account: azure.storage.Account, bindings: pulumi.Output<QueueBinding[]>,
+        args: subscription.EventSubscriptionArgs<QueueContext, Buffer>, options?: pulumi.ResourceOptions) {
+
+        super("azure-serverless:account:QueueEventSubscription", name, bindings, args, options);
+
+        this.account = account;
+    }
+}
