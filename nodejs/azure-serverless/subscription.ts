@@ -14,8 +14,6 @@
 
 import * as azure from "@pulumi/azure";
 import * as pulumi from "@pulumi/pulumi";
-import * as fs from "fs";
-import * as filepath from "path";
 
 import * as azurefunctions from "azure-functions-ts-essentials";
 import { signedBlobReadUrl } from "./util";
@@ -38,7 +36,32 @@ export interface Context extends azurefunctions.Context {
  */
 export type Callback<C extends Context, Data> = (context: C, data: Data) => void;
 
-export interface EventSubscriptionArgs {
+/**
+ * CallbackFactory is the signature for a function that will be called once to produce the function
+ * that Azure FunctionApps will call into.  It can be used to initialize expensive state once that
+ * can then be used across all invocations of the FunctionApp (as long as the FunctionApp is using
+ * the same warm node instance).
+ */
+export type CallbackFactory<C extends Context, Data> = () => Callback<C, Data>;
+
+export interface EventSubscriptionArgs<C extends Context, Data> {
+    /**
+     * The Javascript function instance to use as the entrypoint for the Azure FunctionApp.  Either
+     * [func] or [factoryFunc] must be provided.
+     */
+    func?: Callback<C, Data>;
+
+    /**
+     * The Javascript function instance that will be called to produce the function that is the
+     * entrypoint for the Azure FunctionApp. Either [func] or [factoryFunc] must be provided.
+     *
+     * This form is useful when there is expensive initialization work that should only be executed
+     * once.  The factory-function will be invoked once when the final Azure FunctionApp module is
+     * loaded. It can run whatever code it needs, and will end by returning the actual function that
+     * the Azure will call into each time the FunctionApp it is is invoked.
+     */
+    factoryFunc?: CallbackFactory<C, Data>;
+
     /**
      * The resource group to create the serverless FunctionApp within.  If not provided, a new
      * resource group will be created with the same name as the pulumi resource. It will be created
@@ -70,6 +93,26 @@ export interface EventSubscriptionArgs {
      * A key-value map to use as the 'App Settings' for this function.
      */
     appSettings?: pulumi.Output<Record<string, string>>;
+
+    /**
+     * The paths relative to the program folder to include in the FunctionApp upload.  Default is
+     * `[]`.
+     */
+    includePaths?: string[];
+
+    /**
+     * The packages relative to the program folder to include in the FunctionApp upload.  The
+     * version of the package installed in the program folder and it's dependencies will all be
+     * included. Default is `[]`.
+     */
+    includePackages?: string[];
+
+    /**
+     * The packages relative to the program folder to not include the FunctionApp upload. This can
+     * be used to override the default serialization logic that includes all packages referenced by
+     * project.json (except @pulumi packages).  Default is `[]`.
+     */
+    excludePackages?: string[];
 }
 
 /**
@@ -88,17 +131,37 @@ export interface Binding {
  */
 function serializeCallback<C extends Context, Data>(
         name: string,
-        handler: Callback<C, Data>,
+        eventSubscriptionArgs: EventSubscriptionArgs<C, Data>,
         bindingsOutput: pulumi.Input<Binding[]>,
     ): pulumi.Output<pulumi.asset.AssetMap> {
 
-    const includedPackages = new Set<string>();
-    const excludedPackages = new Set<string>();
+    if (eventSubscriptionArgs.func && eventSubscriptionArgs.factoryFunc) {
+        throw new pulumi.RunError("Cannot provide both [func] and [factoryFunc]");
+    }
 
-    const pathSetOutput = pulumi.output(allFoldersForPackages(includedPackages, excludedPackages));
+    if (!eventSubscriptionArgs.func && !eventSubscriptionArgs.factoryFunc) {
+        throw new Error("Missing required function callback");
+    }
 
-    const serializedHandlerOutput = pulumi.output(pulumi.runtime.serializeFunction(handler));
-    return pulumi.all([bindingsOutput, serializedHandlerOutput, pathSetOutput]).apply(([bindings, serializedHandler, pathSet]) => {
+    let func: Function;
+    if (eventSubscriptionArgs.func) {
+        func = redirectConsoleOutput(eventSubscriptionArgs.func);
+    }
+    else {
+        func = () => {
+            const innerFunc = eventSubscriptionArgs.factoryFunc!();
+            return redirectConsoleOutput(innerFunc);
+        };
+    }
+
+    const serializedHandlerPromise = pulumi.runtime.serializeFunction(
+        func, { isFactoryFunction: !!eventSubscriptionArgs.factoryFunc });
+    const pathSetPromise = pulumi.runtime.computeCodePaths(
+        eventSubscriptionArgs.includePaths || [],
+        eventSubscriptionArgs.includePackages || [],
+        eventSubscriptionArgs.excludePackages || []);
+
+    return pulumi.all([bindingsOutput, serializedHandlerPromise, pathSetPromise]).apply(([bindings, serializedHandler, pathSet]) => {
         const map: pulumi.asset.AssetMap = {};
         map["host.json"] = new pulumi.asset.StringAsset(JSON.stringify({
             "tracing": {
@@ -115,117 +178,27 @@ function serializeCallback<C extends Context, Data>(
 
         // TODO: unify this code with aws-serverless instead of straight copying.
         // For each of the required paths, add the corresponding FileArchive or FileAsset to the AssetMap.
-        for (const path of pathSet.values()) {
-            // The Asset model does not support a consistent way to embed a file-or-directory into an `AssetArchive`, so
-            // we stat the path to figure out which it is and use the appropriate Asset constructor.
-            const stats = fs.lstatSync(path);
-            if (stats.isDirectory()) {
-                map[name + "/" + path] = new pulumi.asset.FileArchive(path);
-            } else {
-                map[name + "/" + path] = new pulumi.asset.FileAsset(path);
-            }
+        for (const [path, value] of pathSet.entries()) {
+            map[name + "/" + path] = value;
         }
 
         return map;
     });
 }
 
-// Package is a node in the package tree returned by readPackageTree.
-interface Package {
-    name: string;
-    path: string;
-    package: {
-        dependencies?: { [key: string]: string; };
+function redirectConsoleOutput<C extends Context, Data>(callback: Callback<C, Data>) {
+    return (context: C, data: Data) => {
+        // Redirect console logging to context logging.
+        console.log = context.log;
+        console.error = context.log.error;
+        console.warn = context.log.warn;
+        // tslint:disable-next-line:no-console
+        console.info = context.log.info;
+
+        return callback(context, data);
     };
-    parent?: Package;
-    children: Package[];
 }
 
-const readPackageTree = require("read-package-tree");
-
-// allFolders computes the set of package folders that are transitively required by the root
-// 'dependencies' node in the client's project.json file.
-function allFoldersForPackages(includedPackages: Set<string>, excludedPackages: Set<string>): Promise<Set<string>> {
-    return new Promise((resolve, reject) => {
-        readPackageTree(".", undefined, (err: any, root: Package) => {
-            if (err) {
-                return reject(err);
-            }
-
-            // This is the core starting point of the algorithm.  We use readPackageTree to get the
-            // package.json information for this project, and then we start by walking the
-            // .dependencies node in that package.  Importantly, we do not look at things like
-            // .devDependencies or or .peerDependencies.  These are not what are considered part of
-            // the final runtime configuration of the app and should not be uploaded.
-            const referencedPackages = new Set<string>(includedPackages);
-            if (root.package && root.package.dependencies) {
-                for (const depName of Object.keys(root.package.dependencies)) {
-                    referencedPackages.add(depName);
-                }
-            }
-
-            const packagePaths = new Set<string>();
-            for (const pkg of referencedPackages) {
-                addPackageAndDependenciesToSet(root, pkg, packagePaths, excludedPackages);
-            }
-
-            resolve(packagePaths);
-        });
-    });
-}
-
-// addPackageAndDependenciesToSet adds all required dependencies for the requested pkg name from the given root package
-// into the set.  It will recurse into all dependencies of the package.
-function addPackageAndDependenciesToSet(
-    root: Package, pkg: string, packagePaths: Set<string>, excludedPackages: Set<string>) {
-    // Don't process this packages if it was in the set the user wants to exclude.
-
-    // Also, exclude it if it's an @pulumi package.  These packages are intended for deployment
-    // time only and will only bloat up the serialized lambda package.
-    if (excludedPackages.has(pkg) ||
-        pkg.startsWith("@pulumi")) {
-
-        return;
-    }
-
-    const child = findDependency(root, pkg);
-    if (!child) {
-        console.warn(`Could not include required dependency '${pkg}' in '${filepath.resolve(root.path)}'.`);
-        return;
-    }
-
-    packagePaths.add(child.path);
-    if (child.package.dependencies) {
-        for (const dep of Object.keys(child.package.dependencies) ) {
-            addPackageAndDependenciesToSet(child, dep, packagePaths, excludedPackages);
-        }
-    }
-}
-
-// findDependency searches the package tree starting at a root node (possibly a child) for a match for the given name.
-// It is assumed that the tree was correctly construted such that dependencies are resolved to compatible versions in
-// the closest available match starting at the provided root and walking up to the head of the tree.
-function findDependency(root: Package, name: string) {
-    for (; root; root = root.parent!) {
-        for (const child of root.children) {
-            let childName = child.name;
-            // Note: `read-package-tree` returns incorrect `.name` properties for packages in an orgnaization - like
-            // `@types/express` or `@protobufjs/path`.  Compute the correct name from the `path` property instead. Match
-            // any name that ends with something that looks like `@foo/bar`, such as `node_modules/@foo/bar` or
-            // `node_modules/baz/node_modules/@foo/bar.
-            const childFolderName = filepath.basename(child.path);
-            const parentFolderName = filepath.basename(filepath.dirname(child.path));
-            if (parentFolderName[0] === "@") {
-                childName = filepath.join(parentFolderName, childFolderName);
-            }
-            if (childName === name) {
-                return child;
-            }
-        }
-    }
-
-    return undefined;
-}
 
 /**
  * Base type for all subscription types.
@@ -243,8 +216,8 @@ export class EventSubscription<C extends Context, Data> extends pulumi.Component
      */
     readonly functionApp: azure.appservice.FunctionApp;
 
-    constructor(type: string, name: string, callback: Callback<C, Data>, bindings: pulumi.Input<Binding[]>,
-                args: EventSubscriptionArgs, options?: pulumi.ResourceOptions) {
+    constructor(type: string, name: string, bindings: pulumi.Input<Binding[]>,
+                args: EventSubscriptionArgs<C, Data>, options?: pulumi.ResourceOptions) {
         super(type, name, {}, options);
 
         const parentArgs = { parent: this };
@@ -289,7 +262,7 @@ export class EventSubscription<C extends Context, Data> extends pulumi.Component
             },
         }, parentArgs);
 
-        const assetMap = serializeCallback(name, callback, bindings);
+        const assetMap = serializeCallback(name, args, bindings);
 
         // const appSettings = assetAndAppSettings.apply(a => a.appSettings);
 
