@@ -167,6 +167,7 @@ function serializeCallback<C extends Context, Data>(
             "tracing": {
                 "consoleLevel": "verbose",
             },
+            "version": "2.0",
         }));
 
         map[`${name}/function.json`] = new pulumi.asset.StringAsset(JSON.stringify({
@@ -279,12 +280,14 @@ export class EventSubscription<C extends Context, Data> extends pulumi.Component
         this.functionApp = new azure.appservice.FunctionApp(name, {
             ...resourceGroupArgs,
 
+            version: "beta",
             appServicePlanId: this.appServicePlan.id,
             storageConnectionString: this.storageAccount.primaryConnectionString,
 
             appSettings: appSettings.apply(settings => ({
                 ...settings,
                 "WEBSITE_RUN_FROM_ZIP": codeBlobUrl,
+                "WEBSITE_NODE_DEFAULT_VERSION": "10.6.0",
             })),
         }, parentArgs);
     }
