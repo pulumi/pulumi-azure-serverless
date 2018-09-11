@@ -240,7 +240,7 @@ export interface QueueContext extends subscription.Context {
         functionDirectory: string;
     };
 
-    "bindingData": { 
+    "bindingData": {
         "queueTrigger": string,
         "dequeueCount": number,
         "expirationTime": string,
@@ -248,11 +248,11 @@ export interface QueueContext extends subscription.Context {
         "insertionTime": string,
         "nextVisibleTime": string,
         "popReceipt": string,
-        "sys": { 
+        "sys": {
             "methodName": string,
-            "utcNow": string 
+            "utcNow": string,
         },
-        "invocationId": string 
+        "invocationId": string,
     };
 }
 
