@@ -242,7 +242,7 @@ export class EventSubscription<C extends Context, Data> extends pulumi.Component
 
         // Account name needs to be at max 16 chars so that with the extra 8 random chars it does
         // not exceed the max length of 24.
-        this.storageAccount = args.storageAccount || new azure.storage.Account(`${name}`.substr(0, 16), {
+        this.storageAccount = args.storageAccount || new azure.storage.Account(makeSafeStorageAccountName(name), {
             ...resourceGroupArgs,
 
             accountKind: "StorageV2",
@@ -293,4 +293,8 @@ export class EventSubscription<C extends Context, Data> extends pulumi.Component
             })),
         }, parentArgs);
     }
+}
+
+function makeSafeStorageAccountName(prefix: string) {
+    return prefix.replace(/[^a-zA-Z0-9]/g, "").toLowerCase().substr(0, 16);
 }
