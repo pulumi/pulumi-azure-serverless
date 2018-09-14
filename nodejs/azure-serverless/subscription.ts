@@ -248,13 +248,13 @@ export class EventSubscription<C extends Context, Data> extends pulumi.Component
             accountReplicationType: "LRS",
         }, parentArgs);
 
-        this.storageContainer = args.storageContainer || new azure.storage.Container(`${name}`, {
+        this.storageContainer = args.storageContainer || new azure.storage.Container(makeSafeStorageContainerName(name), {
             resourceGroupName: resourceGroupName,
             storageAccountName: this.storageAccount.name,
             containerAccessType: "private",
         }, parentArgs);
 
-        this.appServicePlan = args.appServicePlan || new azure.appservice.Plan(`${name}`, {
+        this.appServicePlan = args.appServicePlan || new azure.appservice.Plan(name, {
             ...resourceGroupArgs,
 
             kind: "FunctionApp",
@@ -294,7 +294,14 @@ export class EventSubscription<C extends Context, Data> extends pulumi.Component
 }
 
 function makeSafeStorageAccountName(prefix: string) {
-    // Account name needs to be at max 16 chars so that with the extra 8 random chars it does
+    // Account name needs to be at max 24 chars (minus the extra 8 random chars);
     // not exceed the max length of 24.
-    return prefix.replace(/[^a-zA-Z0-9]/g, "").toLowerCase().substr(0, 16);
+    // Name must be alphanumeric.
+    return prefix.replace(/[^a-zA-Z0-9]/g, "").toLowerCase().substr(0, 24 - 8);
+}
+
+function makeSafeStorageContainerName(prefix: string) {
+    // Account name needs to be at max 63 chars (minus the extra 8 random chars);
+    // Name must be alphanumeric (and hyphens).
+    return prefix.replace(/[^a-zA-Z0-9-]/g, "").toLowerCase().substr(0, 63 - 8);
 }
