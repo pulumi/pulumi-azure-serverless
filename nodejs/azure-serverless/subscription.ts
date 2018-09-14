@@ -132,7 +132,7 @@ export interface Binding {
 function serializeCallback<C extends Context, Data>(
         name: string,
         eventSubscriptionArgs: EventSubscriptionArgs<C, Data>,
-        bindingsOutput: pulumi.Input<Binding[]>,
+        bindingsInput: pulumi.Input<Binding[]>,
     ): pulumi.Output<pulumi.asset.AssetMap> {
 
     if (eventSubscriptionArgs.func && eventSubscriptionArgs.factoryFunc) {
@@ -161,7 +161,7 @@ function serializeCallback<C extends Context, Data>(
         eventSubscriptionArgs.includePackages || [],
         eventSubscriptionArgs.excludePackages || []);
 
-    return pulumi.all([bindingsOutput, serializedHandlerPromise, pathSetPromise]).apply(([bindings, serializedHandler, pathSet]) => {
+    return pulumi.output(bindingsInput).apply(async (bindings) => {
         const map: pulumi.asset.AssetMap = {};
         map["host.json"] = new pulumi.asset.StringAsset(JSON.stringify({
             "tracing": {
@@ -173,11 +173,14 @@ function serializeCallback<C extends Context, Data>(
             "disabled": false,
             "bindings": bindings,
         }));
+
+        const serializedHandler = await serializedHandlerPromise;
         map[`${name}/index.js`] = new pulumi.asset.StringAsset(`module.exports = require("./handler").handler`),
         map[`${name}/handler.js`] = new pulumi.asset.StringAsset(serializedHandler.text);
 
         // TODO: unify this code with aws-serverless instead of straight copying.
         // For each of the required paths, add the corresponding FileArchive or FileAsset to the AssetMap.
+        const pathSet = await pathSetPromise;
         for (const [path, value] of pathSet.entries()) {
             map[name + "/" + path] = value;
         }
