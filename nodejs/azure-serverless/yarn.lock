@@ -46,8 +46,8 @@
   resolved "https://registry.yarnpkg.com/@protobufjs/utf8/-/utf8-1.1.0.tgz#a777360b5b39a1a2e5106f8e858f2fd2d060c570"
 
 "@pulumi/azure@^0.15.3-dev":
-  version "0.15.3-dev-1536981211-g01bb893"
-  resolved "https://registry.yarnpkg.com/@pulumi/azure/-/azure-0.15.3-dev-1536981211-g01bb893.tgz#762b223ad109ba9ed53771296e7519d7fbe55c6a"
+  version "0.15.3-dev-1537000169-gd099e85"
+  resolved "https://registry.yarnpkg.com/@pulumi/azure/-/azure-0.15.3-dev-1537000169-gd099e85.tgz#564fdcee7b180afcc029cb156a7d2f23280738b1"
   dependencies:
     "@pulumi/pulumi" "^0.15.3-dev"
 
