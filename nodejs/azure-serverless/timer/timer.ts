@@ -96,7 +96,7 @@ export async function onTimer(
             name: "timer",
             type: "timerTrigger",
             direction: "in",
-            schedule: s
+            schedule: s,
         };
 
         return [timerBinding];

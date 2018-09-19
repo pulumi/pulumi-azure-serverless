@@ -15,7 +15,7 @@
 import * as eventhub from "./eventhub";
 import * as functionApp from "./functionApp";
 import * as storage from "./storage";
-import * as timer from "./timer";
 import * as subscription from "./subscription";
+import * as timer from "./timer";
 
-export { eventhub, functionApp, storage, timer, subscription };
+export { eventhub, functionApp, storage, subscription, timer };
