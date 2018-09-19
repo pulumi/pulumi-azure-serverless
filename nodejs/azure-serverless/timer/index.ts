@@ -12,10 +12,4 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import * as eventhub from "./eventhub";
-import * as functionApp from "./functionApp";
-import * as storage from "./storage";
-import * as timer from "./timer";
-import * as subscription from "./subscription";
-
-export { eventhub, functionApp, storage, timer, subscription };
+export * from "./timer";
