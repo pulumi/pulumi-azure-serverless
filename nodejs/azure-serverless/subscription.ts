@@ -105,17 +105,6 @@ export type EventSubscriptionArgs<C extends Context, Data> = Overwrite<appservic
      */
     appServicePlanId?: never;
 
-    siteConfig?: pulumi.Input<{
-        /** Should the Function App be loaded at all times? Defaults to false. */
-        alwaysOn?: pulumi.Input<boolean>;
-
-        /** Should the Function App run in 32 bit mode, rather than 64 bit mode? Defaults to true. */
-        use32BitWorkerProcess?: pulumi.Input<boolean>;
-
-        /** Should WebSockets be enabled? */
-        websocketsEnabled?: pulumi.Input<boolean>;
-    }>;
-
     /**
      * Options to control which files and packages are included with the serialized FunctionApp code.
      */
@@ -260,8 +249,6 @@ export class EventSubscription<C extends Context, Data> extends pulumi.Component
 
         const parentArgs = { parent: this };
 
-        const appSettings = pulumi.output(args.appSettings).apply(v => v || {});
-
         if (!args.resourceGroup) {
             throw new pulumi.RunError("[resourceGroup] must be provided in [args].");
         }
@@ -320,12 +307,14 @@ export class EventSubscription<C extends Context, Data> extends pulumi.Component
 
             appServicePlanId: this.appServicePlan.id,
             storageConnectionString: this.storageAccount.primaryConnectionString,
-            siteConfig: args.siteConfig,
 
-            appSettings: appSettings.apply(settings => ({
-                ...settings,
-                "WEBSITE_RUN_FROM_ZIP": codeBlobUrl,
-            })),
+            appSettings: pulumi.output(args.appSettings).apply(settings => {
+                settings = settings || {};
+                return {
+                    ...settings,
+                    "WEBSITE_RUN_FROM_ZIP": codeBlobUrl,
+                }
+            }),
         };
 
         this.functionApp = new appservice.FunctionApp(name, functionAppArgs, parentArgs);
