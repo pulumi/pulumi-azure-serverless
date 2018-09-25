@@ -91,6 +91,12 @@ export type EventSubscriptionArgs<C extends Context, Data> = Overwrite<appservic
     storageAccount?: azure.storage.Account;
 
     /**
+     * Not used.  The storage connection string is determined based on the ZipBlob that is created
+     * for all the code for the Function.
+     */
+    storageConnectionString?: never;
+
+    /**
      * The container to use where the zip-file blob for the FunctionApp will be located. If not
      * provided, the root container of the storage account will be used.
      */
