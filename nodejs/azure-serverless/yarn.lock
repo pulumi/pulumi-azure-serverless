@@ -45,7 +45,7 @@
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/@protobufjs/utf8/-/utf8-1.1.0.tgz#a777360b5b39a1a2e5106f8e858f2fd2d060c570"
 
-"@pulumi/azure@^0.15.3-dev":
+"@pulumi/azure@dev":
   version "0.15.3-dev-1537864175-g4459083"
   resolved "https://registry.yarnpkg.com/@pulumi/azure/-/azure-0.15.3-dev-1537864175-g4459083.tgz#c6195bdd7c7703e129f06daad7f4c5130d224056"
   dependencies:
@@ -66,7 +66,7 @@
     ts-node "^7.0.0"
     typescript "^3.0.0"
 
-"@pulumi/pulumi@^0.15.4-dev":
+"@pulumi/pulumi@dev":
   version "0.15.4-dev-1537898302-g5d34e380"
   resolved "https://registry.yarnpkg.com/@pulumi/pulumi/-/pulumi-0.15.4-dev-1537898302-g5d34e380.tgz#73e5507aa352d15602f3269c60aa1894f1d690e9"
   dependencies:
