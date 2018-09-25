@@ -22,7 +22,8 @@ const topic = new eventhub.Topic("test", {
 });
 
 export const subscription = serverless.eventhub.onTopicEvent("test", namespace, topic, {
-    resourceGroup: resourceGroup,
+    location: location,
+    resourceGroupName: resourceGroup.name,
     func: async (context, arg) => {
         console.log("arg: " + JSON.stringify(arg, null, 4));
         console.log("context: " + JSON.stringify(context, null, 4));
