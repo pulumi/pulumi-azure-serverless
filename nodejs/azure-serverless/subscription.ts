@@ -94,6 +94,17 @@ export interface EventSubscriptionArgs<C extends Context, Data> {
      */
     appSettings?: pulumi.Output<Record<string, string>>;
 
+    siteConfig?: pulumi.Input<{
+        /** Should the Function App be loaded at all times? Defaults to false. */
+        alwaysOn?: pulumi.Input<boolean>;
+
+        /** Should the Function App run in 32 bit mode, rather than 64 bit mode? Defaults to true. */
+        use32BitWorkerProcess?: pulumi.Input<boolean>;
+
+        /** Should WebSockets be enabled? */
+        websocketsEnabled?: pulumi.Input<boolean>;
+    }>;
+
     /**
      * The paths relative to the program folder to include in the FunctionApp upload.  Default is
      * `[]`.
@@ -284,6 +295,7 @@ export class EventSubscription<C extends Context, Data> extends pulumi.Component
 
             appServicePlanId: this.appServicePlan.id,
             storageConnectionString: this.storageAccount.primaryConnectionString,
+            siteConfig: args.siteConfig,
 
             appSettings: appSettings.apply(settings => ({
                 ...settings,
