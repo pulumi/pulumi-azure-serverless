@@ -64,16 +64,22 @@ export type EventSubscriptionArgs<C extends Context, Data> = Overwrite<appservic
     factoryFunc?: CallbackFactory<C, Data>;
 
     /**
-     * The resource group to create the serverless FunctionApp within.  If not provided, a new
-     * resource group will be created with the same name as the pulumi resource. It will be created
-     * in the region specified by the config variable "azure:region"
+     * The name of the resource group in which to create the Function App.
      */
-    resourceGroup: pulumi.Input<azure.core.ResourceGroup>;
+    resourceGroupName: pulumi.Input<string>;
 
     /**
-     * Do not set.  Use [resourceGroup] instead.
+     * Specifies the supported Azure location where the resource exists. Changing this forces a new resource to be created.
      */
-    resourceGroupName: never;
+    location: pulumi.Input<string>;
+
+    /**
+     * The ID of the App Service Plan within which to create this Function App. Changing this forces
+     * a new resource to be created.
+     *
+     * If not provided, a plan will created automatically for this FunctionApp.
+     */
+    appServicePlanId?: pulumi.Input<string>;
 
     /**
      * The storage account to use where the zip-file blob for the FunctionApp will be located. If
@@ -92,18 +98,6 @@ export type EventSubscriptionArgs<C extends Context, Data> = Overwrite<appservic
      * A key-value pair of App Settings.
      */
     appSettings?: pulumi.Input<{ [key: string]: any; }>
-
-    /**
-     * The consumption plan to put the FunctionApp in.  If not provided, a 'Dynamic', 'Y1' plan will
-     * be used.  See https://social.msdn.microsoft.com/Forums/azure/en-US/665c365d-2b86-4a77-8cea-72ccffef216c for
-     * additional details.
-     */
-    appServicePlan?: appservice.Plan;
-
-    /**
-     * Do not set directly.  Use [appServicePlan] instead.
-     */
-    appServicePlanId?: never;
 
     /**
      * Options to control which files and packages are included with the serialized FunctionApp code.
@@ -231,10 +225,8 @@ function redirectConsoleOutput<C extends Context, Data>(callback: Callback<C, Da
  * Base type for all subscription types.
  */
 export class EventSubscription<C extends Context, Data> extends pulumi.ComponentResource {
-    readonly resourceGroup: pulumi.Output<azure.core.ResourceGroup>;
     readonly storageAccount: azure.storage.Account;
     readonly storageContainer: azure.storage.Container;
-    readonly appServicePlan: appservice.Plan;
 
     /**
      * The FunctionApp instance created to respond to the specific Binding triggers.  The
@@ -244,23 +236,38 @@ export class EventSubscription<C extends Context, Data> extends pulumi.Component
     readonly functionApp: appservice.FunctionApp;
 
     constructor(type: string, name: string, bindings: pulumi.Input<Binding[]>,
-                args: EventSubscriptionArgs<C, Data>, options?: pulumi.ResourceOptions) {
+                args: EventSubscriptionArgs<C, Data>, options: pulumi.ResourceOptions = {}) {
         super(type, name, {}, options);
 
         const parentArgs = { parent: this };
 
-        if (!args.resourceGroup) {
-            throw new pulumi.RunError("[resourceGroup] must be provided in [args].");
+        if (!args.resourceGroupName) {
+            throw new pulumi.ResourceError("[resourceGroupName] must be provided in [args]", options.parent);
         }
 
-        this.resourceGroup = pulumi.output(args.resourceGroup);
-        const resourceGroupName = this.resourceGroup.apply(g => g.name);
-        const location = this.resourceGroup.apply(g => g.location);
+        if (!args.location) {
+            throw new pulumi.ResourceError("[location] must be provided in [args]", options.parent);
+        }
 
         const resourceGroupArgs = {
-            resourceGroupName,
-            location,
+            resourceGroupName: args.resourceGroupName,
+            location: args.location,
         };
+
+        let appServicePlanId = args.appServicePlanId;
+        if (!appServicePlanId) {
+            const plan = new appservice.Plan(name, {
+                ...resourceGroupArgs,
+
+                kind: "FunctionApp",
+
+                sku: {
+                    tier: "Dynamic",
+                    size: "Y1",
+                },
+            }, parentArgs);
+            appServicePlanId = plan.id;
+        }
 
         this.storageAccount = args.storageAccount || new azure.storage.Account(makeSafeStorageAccountName(name), {
             ...resourceGroupArgs,
@@ -271,28 +278,14 @@ export class EventSubscription<C extends Context, Data> extends pulumi.Component
         }, parentArgs);
 
         this.storageContainer = args.storageContainer || new azure.storage.Container(makeSafeStorageContainerName(name), {
-            resourceGroupName: resourceGroupName,
+            resourceGroupName: args.resourceGroupName,
             storageAccountName: this.storageAccount.name,
             containerAccessType: "private",
         }, parentArgs);
 
-        this.appServicePlan = args.appServicePlan || new appservice.Plan(name, {
-            ...resourceGroupArgs,
-
-            kind: "FunctionApp",
-
-            sku: {
-                tier: "Dynamic",
-                size: "Y1",
-            },
-        }, parentArgs);
-
         const assetMap = serializeCallback(name, args, bindings);
-
-        // const appSettings = assetAndAppSettings.apply(a => a.appSettings);
-
         const blob = new azure.storage.ZipBlob(name, {
-            resourceGroupName: resourceGroupName,
+            resourceGroupName: args.resourceGroupName,
             storageAccountName: this.storageAccount.name,
             storageContainerName: this.storageContainer.name,
             type: "block",
@@ -305,7 +298,7 @@ export class EventSubscription<C extends Context, Data> extends pulumi.Component
             ...args,
             ...resourceGroupArgs,
 
-            appServicePlanId: this.appServicePlan.id,
+            appServicePlanId: appServicePlanId,
             storageConnectionString: this.storageAccount.primaryConnectionString,
 
             appSettings: pulumi.output(args.appSettings).apply(settings => {
@@ -313,7 +306,7 @@ export class EventSubscription<C extends Context, Data> extends pulumi.Component
                 return {
                     ...settings,
                     "WEBSITE_RUN_FROM_ZIP": codeBlobUrl,
-                }
+                };
             }),
         };
 
