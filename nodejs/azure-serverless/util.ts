@@ -16,6 +16,13 @@ import * as azure from "@pulumi/azure";
 import * as pulumi from "@pulumi/pulumi";
 import * as azurestorage from "azure-storage";
 
+type Diff<T extends string | number | symbol, U extends string | number | symbol> =
+  ({ [P in T]: P } & { [P in U]: never } & { [x: string]: never })[T];
+
+// Overwrite allows you to take an existing type, and then overwrite existing properties in it
+// with properties of the same name, but with entirely different types.
+export type Overwrite<T, U> = Pick<T, Diff<keyof T, keyof U>> & U;
+
 export function signedBlobReadUrl(
     blob: azure.storage.Blob | azure.storage.ZipBlob,
     account: azure.storage.Account,
