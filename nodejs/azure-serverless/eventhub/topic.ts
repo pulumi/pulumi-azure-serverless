@@ -108,7 +108,7 @@ export function onTopicEvent(
     let subscription = args.subscription;
     if (!subscription) {
         subscription = new eventhub.Subscription(name, {
-            resourceGroupName: pulumi.output(args.resourceGroup).apply(g => g.name),
+            resourceGroupName: args.resourceGroupName,
             namespaceName: topic.namespaceName,
             topicName: topic.name,
             maxDeliveryCount: pulumi.output(args.maxDeliveryCount).apply(c => c === undefined ? 10 : c),

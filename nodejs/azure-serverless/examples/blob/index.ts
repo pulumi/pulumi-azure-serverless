@@ -31,7 +31,8 @@ serverless.storage.onBlobEvent("newImage", storageAccount, {
     },
     containerName: storageContainer.name,
     filterSuffix: ".png",
-    resourceGroup: resourceGroup,
+    resourceGroupName: resourceGroup.name,
+    location: resourceGroup.location,
 });
 
 // The storage account where images should be uploaded

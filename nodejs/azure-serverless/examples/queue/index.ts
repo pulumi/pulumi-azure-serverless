@@ -29,7 +29,8 @@ serverless.storage.onQueueMessage("newMessage", storageAccount, {
         context.done();
     },
     queueName: queue.name,
-    resourceGroup: resourceGroup,
+    resourceGroupName: resourceGroup.name,
+    location: resourceGroup.location,
 });
 
 // The storage account of the queue
