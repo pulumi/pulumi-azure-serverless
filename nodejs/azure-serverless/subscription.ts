@@ -77,7 +77,9 @@ export type EventSubscriptionArgs<C extends Context, Data> = Overwrite<appservic
      * The ID of the App Service Plan within which to create this Function App. Changing this forces
      * a new resource to be created.
      *
-     * If not provided, a plan will created automatically for this FunctionApp.
+     * If not provided, a default "Consumption" plan will be created.  See:
+     * https://docs.microsoft.com/en-us/azure/azure-functions/functions-scale#consumption-plan for
+     * more details.
      */
     appServicePlanId?: pulumi.Input<string>;
 
