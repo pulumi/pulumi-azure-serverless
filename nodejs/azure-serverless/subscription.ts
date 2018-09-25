@@ -191,9 +191,9 @@ function serializeCallback<C extends Context, Data>(
         func, { isFactoryFunction: !!eventSubscriptionArgs.factoryFunc });
 
     const codePathOptions = eventSubscriptionArgs.codePathOptions || {};
-    codePathOptions.extraIncludePaths = codePathOptions.extraIncludePaths || eventSubscriptionArgs.includePaths || [];
-    codePathOptions.extraIncludePackages = codePathOptions.extraIncludePaths || eventSubscriptionArgs.includePackages || [];
-    codePathOptions.extraExcludePackages = codePathOptions.extraExcludePackages || eventSubscriptionArgs.excludePackages || [];
+    codePathOptions.extraIncludePaths = codePathOptions.extraIncludePaths || eventSubscriptionArgs.includePaths;
+    codePathOptions.extraIncludePackages = codePathOptions.extraIncludePaths || eventSubscriptionArgs.includePackages;
+    codePathOptions.extraExcludePackages = codePathOptions.extraExcludePackages || eventSubscriptionArgs.excludePackages;
     const pathSetPromise = pulumi.runtime.computeCodePaths(codePathOptions);
 
     return pulumi.output(bindingsInput).apply(async (bindings) => {
