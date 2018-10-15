@@ -45,15 +45,15 @@
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/@protobufjs/utf8/-/utf8-1.1.0.tgz#a777360b5b39a1a2e5106f8e858f2fd2d060c570"
 
-"@pulumi/azure@dev":
-  version "0.15.3-dev-1538597537-g32a9a61"
-  resolved "https://registry.yarnpkg.com/@pulumi/azure/-/azure-0.15.3-dev-1538597537-g32a9a61.tgz#b13bb2521c7f80d3f4da5df20cdd3a9d2b33fe1c"
+"@pulumi/azure@^0.16.0":
+  version "0.16.0"
+  resolved "https://registry.yarnpkg.com/@pulumi/azure/-/azure-0.16.0.tgz#6ee635e5613e0fc6acdba1bfdd311bf2e436011f"
   dependencies:
-    "@pulumi/pulumi" dev
+    "@pulumi/pulumi" "^0.16.0"
 
-"@pulumi/pulumi@dev":
-  version "0.15.5-dev-1538597180-g16ae1f2a"
-  resolved "https://registry.yarnpkg.com/@pulumi/pulumi/-/pulumi-0.15.5-dev-1538597180-g16ae1f2a.tgz#c59922ad0df786119a037e1fabfae80808b4526c"
+"@pulumi/pulumi@^0.16.0":
+  version "0.16.0"
+  resolved "https://registry.yarnpkg.com/@pulumi/pulumi/-/pulumi-0.16.0.tgz#8c199cadffe93d5407bfbf19fbe1e41a39b01bcc"
   dependencies:
     google-protobuf "^3.5.0"
     grpc "^1.12.2"

@@ -45,15 +45,15 @@
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/@protobufjs/utf8/-/utf8-1.1.0.tgz#a777360b5b39a1a2e5106f8e858f2fd2d060c570"
 
-"@pulumi/azure@dev":
-  version "0.15.3-dev-1537864175-g4459083"
-  resolved "https://registry.yarnpkg.com/@pulumi/azure/-/azure-0.15.3-dev-1537864175-g4459083.tgz#c6195bdd7c7703e129f06daad7f4c5130d224056"
+"@pulumi/azure@^0.16.0":
+  version "0.16.0"
+  resolved "https://registry.yarnpkg.com/@pulumi/azure/-/azure-0.16.0.tgz#6ee635e5613e0fc6acdba1bfdd311bf2e436011f"
   dependencies:
-    "@pulumi/pulumi" "^0.15.3-dev"
+    "@pulumi/pulumi" "^0.16.0"
 
-"@pulumi/pulumi@^0.15.3-dev":
-  version "0.15.3"
-  resolved "https://registry.yarnpkg.com/@pulumi/pulumi/-/pulumi-0.15.3.tgz#2a4ee8f1270384b722fc6b18e5f98a3fa82a5619"
+"@pulumi/pulumi@^0.16.0":
+  version "0.16.0"
+  resolved "https://registry.yarnpkg.com/@pulumi/pulumi/-/pulumi-0.16.0.tgz#8c199cadffe93d5407bfbf19fbe1e41a39b01bcc"
   dependencies:
     google-protobuf "^3.5.0"
     grpc "^1.12.2"
@@ -65,21 +65,7 @@
     source-map-support "^0.4.16"
     ts-node "^7.0.0"
     typescript "^3.0.0"
-
-"@pulumi/pulumi@dev":
-  version "0.15.4-dev-1537898302-g5d34e380"
-  resolved "https://registry.yarnpkg.com/@pulumi/pulumi/-/pulumi-0.15.4-dev-1537898302-g5d34e380.tgz#73e5507aa352d15602f3269c60aa1894f1d690e9"
-  dependencies:
-    google-protobuf "^3.5.0"
-    grpc "^1.12.2"
-    minimist "^1.2.0"
-    normalize-package-data "^2.4.0"
-    protobufjs "^6.8.6"
-    read-package-tree "^5.2.1"
-    require-from-string "^2.0.1"
-    source-map-support "^0.4.16"
-    ts-node "^7.0.0"
-    typescript "^3.0.0"
+    upath "^1.1.0"
 
 "@types/long@^3.0.32":
   version "3.0.32"
@@ -750,6 +736,10 @@ typescript@^3.0.0:
 typescript@^3.0.3:
   version "3.0.3"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-3.0.3.tgz#4853b3e275ecdaa27f78fda46dc273a7eb7fc1c8"
+
+upath@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/upath/-/upath-1.1.0.tgz#35256597e46a581db4793d0ce47fa9aebfc9fabd"
 
 util-deprecate@~1.0.1:
   version "1.0.2"
