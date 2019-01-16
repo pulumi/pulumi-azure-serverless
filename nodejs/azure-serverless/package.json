@@ -10,16 +10,16 @@
     "homepage": "https://pulumi.io/pulumi-azure-serverless",
     "repository": "https://github.com/pulumi/pulumi-azure-serverless",
     "dependencies": {
-        "@pulumi/pulumi": "dev",
-        "@pulumi/azure": "dev",
+        "@pulumi/pulumi": "^0.16.10",
+        "@pulumi/azure": "^0.16.6",
         "read-package-tree": "^5.2.1",
         "azure-functions-ts-essentials": "^1.3.2",
         "azure-storage": "^2.10.1"
     },
     "devDependencies": {
-        "@types/node": "^8.0.26",
-        "tslint": "^5.11.0",
-        "typescript": "^3.0.3"
+        "@types/node": "^10.0.0",
+        "tslint": "^5.12.1",
+        "typescript": "^3.0.0"
     },
     "pulumi": {
         "runtimeDependencies": {
