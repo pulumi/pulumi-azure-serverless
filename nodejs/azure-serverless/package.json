@@ -10,8 +10,8 @@
     "homepage": "https://pulumi.io/pulumi-azure-serverless",
     "repository": "https://github.com/pulumi/pulumi-azure-serverless",
     "dependencies": {
-        "@pulumi/pulumi": "^0.16.14",
-        "@pulumi/azure": "^0.16.7",
+        "@pulumi/pulumi": "feature-proxyOutput",
+        "@pulumi/azure": "feature-proxyOutput",
         "read-package-tree": "^5.2.1",
         "azure-functions-ts-essentials": "^1.3.2",
         "azure-storage": "^2.10.1"

@@ -7,8 +7,8 @@
         "build": "tsc"
     },
     "dependencies": {
-        "@pulumi/pulumi": "dev",
-        "@pulumi/azure": "dev",
+        "@pulumi/pulumi": "feature-proxyOutput",
+        "@pulumi/azure": "feature-proxyOutput",
         "mime-types": "^2.1.19"
     },
     "devDependencies": {
