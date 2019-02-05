@@ -128,8 +128,6 @@ export class HttpFunction extends pulumi.ComponentResource {
             },
         }, parentArgs);
 
-        this.endpoint = this.functionApp.defaultHostname.apply(h => {
-            return `https://${h}/api/${name}`;
-        });
+        this.endpoint = pulumi.interpolate `https://${this.functionApp.defaultHostname}/api/${name}`;
     }
 }
