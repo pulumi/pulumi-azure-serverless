@@ -141,8 +141,7 @@ export async function onBlobEvent(
         const prefix = args.filterPrefix || "";
         const suffix = args.filterSuffix || "";
 
-        path = pulumi.all([args.containerName, prefix, suffix]).apply(
-            ([cn, pr, su]) => cn + `/${pr}{blobName}${su}`);
+        path = pulumi.interpolate `${args.containerName}/${prefix}{blobName}${suffix}`;
     } else {
         throw new pulumi.RunError("Either [path] or [containerName] must be present in [args]");
     }
