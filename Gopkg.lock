@@ -75,14 +75,6 @@
   version = "v1.17.5"
 
 [[projects]]
-  digest = "1:15ceb8ca7a71db4c426d8aef1909ea074f6840efa163490bb2798f475624e4ae"
-  name = "github.com/bgentry/speakeasy"
-  packages = ["."]
-  pruneopts = ""
-  revision = "4aabc24848ce5fd31929f7d1e4ea74d3709c14cd"
-  version = "v0.1.0"
-
-[[projects]]
   digest = "1:79421244ba5848aae4b0a5c41e633a04e4894cb0b164a219dc8c15ec7facb7f1"
   name = "github.com/blang/semver"
   packages = ["."]
@@ -126,6 +118,17 @@
   version = "v1.13.1"
 
 [[projects]]
+  digest = "1:f1a75a8e00244e5ea77ff274baa9559eb877437b240ee7b278f3fc560d9f08bf"
+  name = "github.com/dustin/go-humanize"
+  packages = [
+    ".",
+    "english",
+  ]
+  pruneopts = ""
+  revision = "9f541cc9db5d55bce703bd99987c9d5cb8eea45e"
+  version = "v1.0.0"
+
+[[projects]]
   digest = "1:f21c1a68814ffc02db479adbd973c710e0ece6150ddc0726655c0a2048299152"
   name = "github.com/emirpasic/gods"
   packages = [
@@ -139,6 +142,14 @@
   pruneopts = ""
   revision = "1615341f118ae12f353cc8a983f35b584342c9b3"
   version = "v1.12.0"
+
+[[projects]]
+  digest = "1:a4724325f1d3bd4127dac415e980c7c28f2e08f4d0ba2513e7de9980906604ef"
+  name = "github.com/gofrs/flock"
+  packages = ["."]
+  pruneopts = ""
+  revision = "392e7fae8f1b0bdbd67dad7237d23f618feb6dbb"
+  version = "v0.7.1"
 
 [[projects]]
   branch = "master"
@@ -313,7 +324,8 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:68726e16f2816ea69d0e6e140dbd16916078c6c3b37e2d4bcc56e5119d4b1001"
+  branch = "master"
+  digest = "1:65139ef31c5164649da2b956974dc4e07864d02a21cf83f045b6087c12157484"
   name = "github.com/pulumi/pulumi"
   packages = [
     "pkg/apitype",
@@ -337,6 +349,7 @@
     "pkg/testing/integration",
     "pkg/tokens",
     "pkg/util/cancel",
+    "pkg/util/ciutil",
     "pkg/util/cmdutil",
     "pkg/util/contract",
     "pkg/util/fsutil",
@@ -348,14 +361,12 @@
     "pkg/util/retry",
     "pkg/util/rpcutil",
     "pkg/util/rpcutil/rpcerror",
-    "pkg/util/testutil",
     "pkg/version",
     "pkg/workspace",
     "sdk/proto/go",
   ]
   pruneopts = ""
-  revision = "da880eab6c0df18f476c8db2ec51da7435aaf807"
-  version = "v0.15.4"
+  revision = "9225c0d72d4cf0a20fd55936149685e539e233b6"
 
 [[projects]]
   branch = "master"
