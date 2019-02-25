@@ -51,7 +51,7 @@ func Test_Examples(t *testing.T) {
 	longTests := []integration.ProgramTestOptions{}
 
 	tests := shortTests
-	if !t.Short() {
+	if !testing.Short() {
 		tests = append(tests, longTests...)
 	}
 
