@@ -19,7 +19,7 @@ lint::
 	tslint -c ../tslint.json -p tsconfig.json
 
 test_fast::
-	PATH=$(PULUMI_BIN):$(PATH) go test -short -v -count=1 -cover -timeout 2h -parallel ${TESTPARALLELISM} ./examples
+	$(GO_TEST_FAST) ./examples
 
 test_all::
-	PATH=$(PULUMI_BIN):$(PATH) go test -v -count=1 -cover -timeout 2h -parallel ${TESTPARALLELISM} ./examples
+	$(GO_TEST) ./examples
