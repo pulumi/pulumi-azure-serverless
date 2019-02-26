@@ -44,11 +44,18 @@ func Test_Examples(t *testing.T) {
 		},
 	}
 
-	examples := []integration.ProgramTestOptions{
+	shortTests := []integration.ProgramTestOptions{
 		base.With(integration.ProgramTestOptions{Dir: path.Join(cwd, "blob")}),
 	}
 
-	for _, ex := range examples {
+	longTests := []integration.ProgramTestOptions{}
+
+	tests := shortTests
+	if !testing.Short() {
+		tests = append(tests, longTests...)
+	}
+
+	for _, ex := range tests {
 		example := ex.With(integration.ProgramTestOptions{
 			ReportStats: integration.NewS3Reporter("us-west-2", "eng.pulumi.com", "testreports"),
 			Tracing:     "https://tracing.pulumi-engineering.com/collector/api/v1/spans",
