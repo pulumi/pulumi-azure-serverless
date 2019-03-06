@@ -7,8 +7,8 @@
         "build": "tsc"
     },
     "dependencies": {
-        "@pulumi/pulumi": "^v0.17.0",
-        "@pulumi/azure": "^v0.17.0",
+        "@pulumi/pulumi": "dev",
+        "@pulumi/azure": "dev",
         "mime-types": "^2.1.19"
     },
     "devDependencies": {
