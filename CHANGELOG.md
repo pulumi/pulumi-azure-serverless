@@ -1,4 +1,10 @@
-## 0.17.1 (Unreleased)
+## 0.17.2 (Unreleased)
+
+## 0.17.1 (Released April 25, 2019)
+
+### Improvements
+
+- Update to depend on the latest version of `@pulumi/azure`.
 
 ## 0.17.0 (Released March 5, 2019)
 
