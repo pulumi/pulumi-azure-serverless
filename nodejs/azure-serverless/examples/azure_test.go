@@ -16,7 +16,6 @@ package examples
 
 import (
 	"os"
-	"path"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -29,19 +28,9 @@ func Test_Examples(t *testing.T) {
 	if environ == "" {
 		t.Skipf("Skipping test due to missing ARM_ENVIRONMENT variable")
 	}
-	cwd, err := os.Getwd()
+	_, err := os.Getwd()
 	if !assert.NoError(t, err, "expected a valid working directory: %v", err) {
 		return
-	}
-
-	// base options shared amongst all tests.
-	base := integration.ProgramTestOptions{
-		Config: map[string]string{
-			"azure:environment": environ,
-		},
-		Dependencies: []string{
-			"@pulumi/azure-serverless",
-		},
 	}
 
 	shortTests := []integration.ProgramTestOptions{}
