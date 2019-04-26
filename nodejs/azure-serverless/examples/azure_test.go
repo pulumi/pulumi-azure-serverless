@@ -44,10 +44,7 @@ func Test_Examples(t *testing.T) {
 		},
 	}
 
-	shortTests := []integration.ProgramTestOptions{
-		base.With(integration.ProgramTestOptions{Dir: path.Join(cwd, "blob")}),
-	}
-
+	shortTests := []integration.ProgramTestOptions{}
 	longTests := []integration.ProgramTestOptions{}
 
 	tests := shortTests
