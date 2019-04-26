@@ -53,9 +53,7 @@ interface BlobBinding extends subscription.Binding {
     connection: string;
 }
 
-/**
- * Data that will be passed along in the context object to the BlobCallback.
- */
+/** @deprecated this functionality is now available directly in `@pulumi/azure` */
 export interface BlobContext extends subscription.Context {
     executionContext: {
         invocationId: string;
@@ -93,11 +91,10 @@ export interface BlobContext extends subscription.Context {
     };
 }
 
-/**
- * Signature of the callback that can receive blob notifications.
- */
+/** @deprecated this functionality is now available directly in `@pulumi/azure` */
 export type BlobCallback = subscription.Callback<BlobContext, Buffer>;
 
+/** @deprecated this functionality is now available directly in `@pulumi/azure` */
 export interface BlobEventSubscriptionArgs extends subscription.EventSubscriptionArgs<BlobContext, Buffer> {
     /**
      * A full path specifying which blob to register events for.  For more information on this see:
@@ -124,10 +121,7 @@ export interface BlobEventSubscriptionArgs extends subscription.EventSubscriptio
     filterSuffix?: pulumi.Input<string>;
 }
 
-/**
- * Creates a new subscription to the given blob using the callback provided, along with optional
- * options to control the behavior of the subscription.
- */
+/** @deprecated this functionality is now available directly in `@pulumi/azure` */
 export async function onBlobEvent(
     name: string, account: azure.storage.Account,
     args: BlobEventSubscriptionArgs, opts?: pulumi.ResourceOptions): Promise<BlobEventSubscription> {
@@ -177,6 +171,7 @@ export async function onBlobEvent(
     return new BlobEventSubscription(name, account, bindings, args, opts);
 }
 
+/** @deprecated this functionality is now available directly in `@pulumi/azure` */
 export class BlobEventSubscription extends subscription.EventSubscription<BlobContext, Buffer> {
     readonly account: azure.storage.Account;
 
@@ -189,8 +184,6 @@ export class BlobEventSubscription extends subscription.EventSubscription<BlobCo
         this.account = account;
     }
 }
-
-
 
 interface QueueBinding extends subscription.Binding {
     /**
@@ -229,9 +222,7 @@ interface QueueBinding extends subscription.Binding {
     connection: string;
 }
 
-/**
- * Data that will be passed along in the context object to the QueueContext.
- */
+/** @deprecated this functionality is now available directly in `@pulumi/azure` */
 export interface QueueContext extends subscription.Context {
     executionContext: {
         invocationId: string;
@@ -255,11 +246,10 @@ export interface QueueContext extends subscription.Context {
     };
 }
 
-/**
- * Signature of the callback that can receive queue notifications.
- */
+/** @deprecated this functionality is now available directly in `@pulumi/azure` */
 export type QueueCallback = subscription.Callback<QueueContext, Buffer>;
 
+/** @deprecated this functionality is now available directly in `@pulumi/azure` */
 export interface QueueEventSubscriptionArgs extends subscription.EventSubscriptionArgs<QueueContext, Buffer> {
     /**
      * The name of the storage queue to listen to.
@@ -267,10 +257,7 @@ export interface QueueEventSubscriptionArgs extends subscription.EventSubscripti
     queueName: pulumi.Input<string>;
 }
 
-/**
- * Creates a new subscription to the given queue using the callback provided, along with optional
- * options to control the behavior of the subscription.
- */
+/** @deprecated this functionality is now available directly in `@pulumi/azure` */
 export async function onQueueMessage(
     name: string, account: azure.storage.Account,
     args: QueueEventSubscriptionArgs, opts?: pulumi.ResourceOptions): Promise<QueueEventSubscription> {
@@ -308,6 +295,7 @@ export async function onQueueMessage(
     return new QueueEventSubscription(name, account, bindings, args, opts);
 }
 
+/** @deprecated this functionality is now available directly in `@pulumi/azure` */
 export class QueueEventSubscription extends subscription.EventSubscription<QueueContext, Buffer> {
     readonly account: azure.storage.Account;
 

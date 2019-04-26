@@ -19,6 +19,7 @@ import * as pulumi from "@pulumi/pulumi";
 import * as azurefunctions from "azure-functions-ts-essentials";
 import { Overwrite, signedBlobReadUrl } from "./util";
 
+/** @deprecated this functionality is now available directly in `@pulumi/azure` */
 export interface Context extends azurefunctions.Context {
     log: {
         (...message: Array<any>): void;
@@ -30,21 +31,13 @@ export interface Context extends azurefunctions.Context {
     };
 }
 
-/**
- * A synchronous function that can be converted into an Azure FunctionApp. This callback should
- * return nothing, and should signal that it is done by calling `context.Done()`. Errors can be
- * signified by calling `context.Done(err)`
- */
+/** @deprecated this functionality is now available directly in `@pulumi/azure` */
 export type Callback<C extends Context, Data> = (context: C, data: Data) => void;
 
-/**
- * CallbackFactory is the signature for a function that will be called once to produce the function
- * that Azure FunctionApps will call into.  It can be used to initialize expensive state once that
- * can then be used across all invocations of the FunctionApp (as long as the FunctionApp is using
- * the same warm node instance).
- */
+/** @deprecated this functionality is now available directly in `@pulumi/azure` */
 export type CallbackFactory<C extends Context, Data> = () => Callback<C, Data>;
 
+/** @deprecated this functionality is now available directly in `@pulumi/azure` */
 export type EventSubscriptionArgs<C extends Context, Data> = Overwrite<appservice.FunctionAppArgs, {
     /**
      * The Javascript function instance to use as the entrypoint for the Azure FunctionApp.  Either
@@ -139,20 +132,14 @@ export type EventSubscriptionArgs<C extends Context, Data> = Overwrite<appservic
     excludePackages?: string[];
 }>;
 
-/**
- * Represents a Binding that will be emitted into the function.json config file for the FunctionApp.
- * Individual services will have more specific information they will define in their own bindings.
- */
+/** @deprecated this functionality is now available directly in `@pulumi/azure` */
 export interface Binding {
     type: string;
     direction: string;
     name: string;
 }
 
-/**
- * Takes in a callback and a set of bindings, and produces the right AssetMap layout that Azure
- * FunctionApps expect.
- */
+/** @deprecated this functionality is now available directly in `@pulumi/azure` */
 function serializeCallback<C extends Context, Data>(
         name: string,
         eventSubscriptionArgs: EventSubscriptionArgs<C, Data>,
@@ -228,10 +215,7 @@ function redirectConsoleOutput<C extends Context, Data>(callback: Callback<C, Da
     };
 }
 
-
-/**
- * Base type for all subscription types.
- */
+/** @deprecated this functionality is now available directly in `@pulumi/azure` */
 export class EventSubscription<C extends Context, Data> extends pulumi.ComponentResource {
     readonly storageAccount: azure.storage.Account;
     readonly storageContainer: azure.storage.Container;

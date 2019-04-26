@@ -48,9 +48,7 @@ interface TopicBinding extends subscriptionMod.Binding {
     connection: string;
 }
 
-/**
- * Data that will be passed along in the context object to the BlobCallback.
- */
+/** @deprecated this functionality is now available directly in `@pulumi/azure` */
 export interface TopicContext extends subscriptionMod.Context {
     invocationId: string;
     executionContext: {
@@ -77,11 +75,10 @@ export interface TopicContext extends subscriptionMod.Context {
     };
 }
 
-/**
- * Signature of the callback that can receive blob notifications.
- */
+/** @deprecated this functionality is now available directly in `@pulumi/azure` */
 export type TopicCallback = subscriptionMod.Callback<TopicContext, any>;
 
+/** @deprecated this functionality is now available directly in `@pulumi/azure` */
 export interface TopicEventSubscriptionArgs extends subscriptionMod.EventSubscriptionArgs<TopicContext, any> {
     /**
      * The eventhub.Subscription to subscribe the FunctionApp to.  If not present, a new
@@ -95,10 +92,7 @@ export interface TopicEventSubscriptionArgs extends subscriptionMod.EventSubscri
     maxDeliveryCount?: pulumi.Input<number>;
 }
 
-/**
- * Creates a new subscription to the given blob using the callback provided, along with optional
- * options to control the behavior of the subscription.
- */
+/** @deprecated this functionality is now available directly in `@pulumi/azure` */
 export function onTopicEvent(
     name: string, namespace: eventhub.Namespace, topic: eventhub.Topic,
     args: TopicEventSubscriptionArgs, opts?: pulumi.ResourceOptions): TopicEventSubscription {
@@ -147,6 +141,7 @@ export function onTopicEvent(
         name, namespace, topic, subscription, bindings, args, opts);
 }
 
+/** @deprecated this functionality is now available directly in `@pulumi/azure` */
 export class TopicEventSubscription extends subscriptionMod.EventSubscription<TopicContext, any> {
     readonly namespace: eventhub.Namespace;
     readonly topic: eventhub.Topic;
