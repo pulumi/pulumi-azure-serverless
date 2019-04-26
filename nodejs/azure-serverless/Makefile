@@ -19,5 +19,7 @@ lint::
 	tslint -c ../tslint.json -p tsconfig.json
 
 test_fast::
+	$(GO_TEST_FAST) ./examples
 
 test_all::
+	$(GO_TEST) ./examples
