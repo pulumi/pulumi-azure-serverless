@@ -18,10 +18,14 @@ import * as pulumi from "@pulumi/pulumi";
 import * as azurefunctions from "azure-functions-ts-essentials";
 import { signedBlobReadUrl } from "./util";
 
+/** @deprecated this functionality is now available directly in `@pulumi/azure` */
 export type Context = azurefunctions.Context;
+/** @deprecated this functionality is now available directly in `@pulumi/azure` */
 export type HttpRequest = azurefunctions.HttpRequest;
+/** @deprecated this functionality is now available directly in `@pulumi/azure` */
 export * from "azure-functions-ts-essentials";
 
+/** @deprecated this functionality is now available directly in `@pulumi/azure` */
 export type AzureFunctionHandler = (context: Context, request: HttpRequest) => void;
 
 async function blobContent(name: string, handler: AzureFunctionHandler): Promise<pulumi.asset.AssetMap> {
@@ -51,8 +55,7 @@ async function blobContent(name: string, handler: AzureFunctionHandler): Promise
     return map;
 }
 
-
-// An Azure function exposed via an HTTP endpoint.
+/** @deprecated this functionality is now available directly in `@pulumi/azure` */
 export class HttpFunction extends pulumi.ComponentResource {
     readonly resourceGroup: azure.core.ResourceGroup;
 

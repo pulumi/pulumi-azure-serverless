@@ -1,5 +1,8 @@
 ## 0.17.2 (Unreleased)
 
+- This package has been deprecated.  All existing functionality is now available directly in
+  `@pulumi/azure`.
+
 ## 0.17.1 (Released April 25, 2019)
 
 ### Improvements
